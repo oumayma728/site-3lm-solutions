@@ -153,13 +153,7 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # ton frontend Next.js en dev
-    "http://localhost:9761",
-    "http://localhost:3001",  # port de secours utilisé quand 3000 est déjà pris
-    "http://localhost:4237",
-    "http://localhost:21177",
-]
+
 
 # Configuration email
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
