@@ -43,7 +43,6 @@ export default function SiteNavbar() {
         <div className="nav-actions">
           <ThemeToggle />
           <Link href="/public/rendez-vous" className="nav-appointment">Prenez un rendez-vous</Link>
-          <Link href="/public/login" className="nav-team">Espace équipe</Link>
         </div>
 
         <button

@@ -8,6 +8,7 @@ nom: string;
   telephone: string;
   message: string;
   cv: string; // URL to the uploaded CV file
+  created_at: string; // ISO date string
 };
 
 
@@ -19,5 +20,7 @@ export async function getAllCandidaturesAdmin(): Promise<candidature[]> {
   const res = await api.get('/candidature/');
   return res.data;
 }
-
+export async function DeleteCandidatureAdmin(id: number): Promise<void> {
+  await api.delete(`/candidature/${id}/`);
+}
 
