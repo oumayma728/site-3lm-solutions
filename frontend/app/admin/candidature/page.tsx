@@ -1,14 +1,59 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
 import {
-  getAllCandidaturesAdmin,
+  getAllCandidaturesAdmin, DeleteCandidatureAdmin,
   type candidature,
 } from '@/lib/candidature';
 
 import PageHeader from '@/components/PageHeader';
 import { useToast } from '@/components/ToastProvider';
+
+// Avatar colours, picked deterministically from the candidate name
+const AVATAR_COLORS = [
+  'var(--accent-secondary)',
+  'var(--accent-primary)',
+  'var(--accent-sage)',
+  'var(--accent-amber)',
+  'var(--ink)',
+];
+
+function avatarColor(name: string) {
+  let hash = 0;
+  for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) | 0;
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+function initials(name: string) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+}
+
+// "aujourd'hui", "hier", "il y a 3 jours"...
+function relativeDate(iso: string) {
+  const days = Math.round(
+    (new Date(iso).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) /
+      86_400_000
+  );
+  if (days > -30) {
+    return new Intl.RelativeTimeFormat('fr', { numeric: 'auto' }).format(days, 'day');
+  }
+  return new Date(iso).toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+// Received less than 48h ago
+function isNew(iso: string) {
+  return Date.now() - new Date(iso).getTime() < 48 * 3_600_000;
+}
 
 export default function CandidaturesListPage() {
   const toast = useToast();
@@ -18,6 +63,7 @@ export default function CandidaturesListPage() {
     useState<candidature | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [poste, setPoste] = useState('');
 
   useEffect(() => {
     getAllCandidaturesAdmin()
@@ -30,8 +76,25 @@ export default function CandidaturesListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  async function handleDeleteCandidature(id: number) {
+    try {
+      await DeleteCandidatureAdmin(id);
+      setCandidatures(candidatures.filter((c) => c.id !== id));
+      setSelectedCandidature(null);
+      toast.success('Candidature supprimée.');
+    } catch {
+      toast.error('Impossible de supprimer la candidature.');
+    }
+  }
+  // Distinct postes present in the received candidatures, for the filter dropdown
+  const postes = Array.from(
+    new Set(candidatures.map((c) => c.reference?.trim()).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b, 'fr'));
+
   const filteredCandidatures = candidatures.filter((c) => {
     const query = search.toLowerCase();
+
+    if (poste && c.reference?.trim() !== poste) return false;
 
     return (
       c.nom.toLowerCase().includes(query) ||
@@ -59,14 +122,30 @@ export default function CandidaturesListPage() {
             </p>
           </div>
 
-          <div className="relative w-72">
-            <input
-              type="text"
-              placeholder="Rechercher un candidat..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-4 py-2.5 text-sm outline-none transition focus:border-[var(--accent-secondary)]"
-            />
+          <div className="flex items-center gap-3">
+            <select
+              value={poste}
+              onChange={(e) => setPoste(e.target.value)}
+              aria-label="Filtrer par poste"
+              className="w-56 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-4 py-2.5 text-sm outline-none transition focus:border-[var(--accent-secondary)]"
+            >
+              <option value="">Tous les postes</option>
+              {postes.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+
+            <div className="relative w-72">
+              <input
+                type="text"
+                placeholder="Rechercher un candidat..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-4 py-2.5 text-sm outline-none transition focus:border-[var(--accent-secondary)]"
+              />
+            </div>
           </div>
         </div>
       )}
@@ -98,73 +177,143 @@ export default function CandidaturesListPage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid gap-4 lg:grid-cols-2">
           {filteredCandidatures.map((c) => (
-            <button
+            <article
               key={c.id}
-              type="button"
+              role="button"
+              tabIndex={0}
               onClick={() => setSelectedCandidature(c)}
-              className="group w-full rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-5 text-left transition hover:border-[var(--accent-secondary)]/40 hover:shadow-sm"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setSelectedCandidature(c);
+                }
+              }}
+              className="group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)] shadow-[var(--shadow-soft)] outline-none transition hover:-translate-y-0.5 hover:border-[var(--accent-secondary)]/40 hover:shadow-[var(--shadow-lift)] focus-visible:border-[var(--accent-secondary)]"
             >
-              <div className="flex items-start justify-between gap-6">
-                {/* Candidate identity */}
-                <div className="flex min-w-0 items-start gap-4">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--line)] text-sm font-semibold">
-                    {c.nom
-                      .split(' ')
-                      .map((part) => part[0])
-                      .slice(0, 2)
-                      .join('')
-                      .toUpperCase()}
-                  </div>
+              {/* Accent strip in the candidate's colour */}
+              <span
+                aria-hidden
+                className="absolute inset-y-0 left-0 w-1"
+                style={{ background: avatarColor(c.nom) }}
+              />
 
-                  <div className="min-w-0">
-                    <h2 className="truncate text-base font-semibold">
+              {/* Header: identity + date */}
+              <div className="flex items-start gap-4 p-5 pb-4">
+                <div
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-sm font-semibold text-white"
+                  style={{ background: avatarColor(c.nom) }}
+                >
+                  {initials(c.nom)}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <h2 className="truncate text-base font-semibold text-[var(--ink)]">
                       {c.nom}
                     </h2>
-
-                    <p className="mt-1 truncate text-sm text-[var(--ink-soft)]">
-                      {c.email}
-                    </p>
-
-                    <p className="mt-1 text-sm text-[var(--ink-soft)]">
-                      {c.telephone}
-                    </p>
+                    {isNew(c.created_at) && (
+                      <span className="shrink-0 rounded-full bg-[var(--accent-primary)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--accent-primary)]">
+                        Nouveau
+                      </span>
+                    )}
                   </div>
+
+                  {/* Poste — the key info for a recruiter */}
+                  <span
+                    className={`mt-2 inline-flex max-w-full items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium ${
+                      c.reference
+                        ? 'bg-[var(--accent-secondary)]/10 text-[var(--accent-secondary)]'
+                        : 'bg-[var(--line)] text-[var(--ink-soft)]'
+                    }`}
+                  >
+                    <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                      <rect x="2" y="7" width="20" height="14" rx="2" />
+                      <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+                    </svg>
+                    <span className="truncate">
+                      {c.reference || 'Poste non renseigné'}
+                    </span>
+                  </span>
                 </div>
 
-                {/* Job / reference */}
-                <div className="shrink-0 text-right">
-                  <p className="text-[10px] uppercase tracking-wider text-[var(--ink-soft)] font-mono-num">
-                    Poste
-                  </p>
-
-                  <p className="mt-1 max-w-[220px] truncate text-sm font-medium">
-                    {c.reference || 'Poste non renseigné'}
-                  </p>
-                </div>
+                <time
+                  dateTime={c.created_at}
+                  title={new Date(c.created_at).toLocaleString('fr-FR')}
+                  className="shrink-0 text-xs text-[var(--ink-soft)] first-letter:uppercase"
+                >
+                  {relativeDate(c.created_at)}
+                </time>
               </div>
 
               {/* Message preview */}
-              {c.message && (
-                <div className="mt-4 border-t border-[var(--line)] pt-4">
-                  <p className="line-clamp-2 text-sm leading-6 text-[var(--ink-soft)]">
+              <div className="flex-1 px-5">
+                {c.message ? (
+                  <p className="line-clamp-2 border-l-2 border-[var(--line)] pl-3 text-sm italic leading-6 text-[var(--ink-soft)]">
                     {c.message}
                   </p>
-                </div>
-              )}
+                ) : (
+                  <p className="text-sm text-[var(--ink-soft)]/70">
+                    Aucun message joint.
+                  </p>
+                )}
+              </div>
 
-              {/* Bottom row */}
-              <div className="mt-4 flex items-center justify-between">
-                <span className="text-xs text-[var(--ink-soft)]">
-                  Candidature #{c.id}
-                </span>
+              {/* Footer: quick actions */}
+              <div className="mt-4 flex items-center gap-2 border-t border-[var(--line)] bg-[var(--paper)] px-5 py-3">
+                <a
+                  href={`mailto:${c.email}`}
+                  onClick={(e) => e.stopPropagation()}
+                  title={c.email}
+                  aria-label={`Écrire à ${c.nom}`}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[var(--ink-soft)] transition hover:border-[var(--accent-secondary)]/40 hover:text-[var(--accent-secondary)]"
+                >
+                  <svg aria-hidden width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2" />
+                    <path d="m22 7-10 6L2 7" />
+                  </svg>
+                </a>
 
-                <span className="text-sm font-medium text-[var(--accent-secondary)] transition group-hover:translate-x-0.5">
+                {c.telephone && (
+                  <a
+                    href={`tel:${c.telephone}`}
+                    onClick={(e) => e.stopPropagation()}
+                    title={c.telephone}
+                    aria-label={`Appeler ${c.nom}`}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[var(--ink-soft)] transition hover:border-[var(--accent-secondary)]/40 hover:text-[var(--accent-secondary)]"
+                  >
+                    <svg aria-hidden width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                  </a>
+                )}
+
+                {c.cv ? (
+                  <a
+                    href={c.cv}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--accent-sage)]/30 bg-[var(--accent-sage)]/10 px-2.5 text-xs font-medium text-[var(--accent-sage)] transition hover:bg-[var(--accent-sage)]/20"
+                  >
+                    <svg aria-hidden width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <path d="M14 2v6h6" />
+                    </svg>
+                    CV
+                  </a>
+                ) : (
+                  <span className="flex h-8 items-center rounded-lg border border-dashed border-[var(--line)] px-2.5 text-xs text-[var(--ink-soft)]">
+                    Sans CV
+                  </span>
+                )}
+
+                <span className="ml-auto text-sm font-medium text-[var(--accent-secondary)] transition group-hover:translate-x-0.5">
                   Voir le profil →
                 </span>
               </div>
-            </button>
+            </article>
           ))}
         </div>
       )}
@@ -306,6 +455,25 @@ export default function CandidaturesListPage() {
                   </div>
                 )}
               </section>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCandidature(null)}
+                  className="mt-8 w-full rounded-lg bg-[var(--accent-secondary)] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--accent-secondary-dark)]"
+                >
+                  Fermer
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    selectedCandidature &&
+                    handleDeleteCandidature(selectedCandidature.id)
+                  }
+                  className="mt-2 w-full rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700"
+                >
+                  Supprimer la candidature
+                </button>
+              </div>
             </div>
           </aside>
         </div>

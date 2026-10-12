@@ -31,6 +31,17 @@ export const programmes: Record<Programme, { label: string; periode: string; dur
   },
 };
 
+// Accent colour per department, limited to the site template's palette (tokens.css),
+// so it also follows the light/dark theme
+const TEMPLATE_ACCENTS = ['var(--a)', 'var(--a2)', 'var(--violet)'];
+
+export function accentFor(departement: string) {
+  const key = departement.trim().toLowerCase();
+  let hash = 0;
+  for (const ch of key) hash = (hash * 31 + ch.charCodeAt(0)) | 0;
+  return TEMPLATE_ACCENTS[Math.abs(hash) % TEMPLATE_ACCENTS.length];
+}
+
 export const parcours = [
   { num: '01', titre: 'Candidature', texte: 'Envoyez votre CV accompagné de quelques lignes présentant votre parcours, vos compétences et vos motivations.' },
   { num: '02', titre: 'Entretien', texte: 'Un échange direct avec l’équipe technique, sur votre parcours et vos envies.' },

@@ -5,10 +5,15 @@
 .detail-back:hover{color:var(--job-accent, var(--a2))}
 .offre-hero h1{margin:0 0 1rem;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(2rem,4.4vw,3rem);line-height:1.1;letter-spacing:-.03em}
 
+.offre-hero-domaine{display:inline-block;margin-bottom:1rem;font-size:.7rem;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--job-accent, var(--a2));background:color-mix(in srgb, var(--job-accent, var(--a2)) 14%, transparent);border:1px solid color-mix(in srgb, var(--job-accent, var(--a2)) 35%, transparent);border-radius:999px;padding:.3rem .75rem}
+.offre-hero-lead{margin:0 0 1.4rem;color:var(--muted);font-size:1.02rem;line-height:1.7;max-width:640px}
+
 .offre-meta-chips{display:flex;flex-wrap:wrap;gap:.6rem;margin-bottom:1.6rem}
 .offre-meta-chips span{font-size:.85rem;font-weight:600;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:.45rem .9rem}
 
-.offre-summary{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:0 1.5rem 3rem;display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+/* The wrapper carries the page padding, so the grid's 1px "line" background only shows between cells */
+.offre-summary-wrap{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:0 1.5rem 1rem}
+.offre-summary{display:grid;grid-template-columns:repeat(var(--cols, 4),1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}
 .offre-summary-item{background:var(--surface-solid);padding:1.2rem;text-align:center}
 .offre-summary-item span{display:block;font-size:.72rem;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem}
 .offre-summary-item strong{font-family:'Space Grotesk',sans-serif;font-size:1rem;font-weight:600;color:var(--ink)}
@@ -23,9 +28,16 @@
 .offre-skills{display:flex;flex-wrap:wrap;gap:.6rem}
 .offre-skills span{font-size:.82rem;font-weight:600;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:.45rem .95rem}
 
+.offre-apply-card{display:flex;align-items:center;justify-content:space-between;gap:1.5rem;padding:1.6rem 1.8rem;border-radius:18px;border:1px solid color-mix(in srgb, var(--job-accent, var(--a)) 35%, var(--line));background:linear-gradient(150deg, color-mix(in srgb, var(--job-accent, var(--a)) 12%, transparent), transparent 70%)}
+.offre-apply-card h2{margin:0 0 .4rem}
+.offre-apply-card p{margin:0}
+.offre-apply-card .gradient-button{flex-shrink:0}
+
 .offre-others{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:1rem 1.5rem 5rem;border-top:1px solid var(--line);padding-top:3rem}
 .offre-others .jobs-list{margin-top:1.5rem}
 
 @media(max-width:700px){
   .offre-summary{grid-template-columns:repeat(2,1fr)}
+  .offre-summary-item:last-child:nth-child(odd){grid-column:1 / -1}
+  .offre-apply-card{flex-direction:column;align-items:flex-start}
 }

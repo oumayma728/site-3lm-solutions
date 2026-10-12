@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import LogoMark from './LogoMark';
+import {LogoMark} from './LogoMark';
 
 export default function PublicNav() {
   const pathname = usePathname();
@@ -26,12 +26,7 @@ export default function PublicNav() {
           >
             Prendre rendez-vous
           </Link>
-          <Link
-            href="/public/login"
-            className="text-sm font-medium px-4 py-2 rounded-full border border-[var(--line)] hover:border-[var(--accent-secondary)] transition-colors"
-          >
-            Espace équipe
-          </Link>
+
         </nav>
       </div>
     </header>
