@@ -20,7 +20,7 @@ function useOffreContext() {
   }, [ref]);
 
   if (!offre) return null;
-  return { label: offre.type_offre === 'stage' ? 'Stage' : 'Poste', titre: offre.titre };
+  return { id: offre.id, label: offre.type_offre === 'stage' ? 'Stage' : 'Poste', titre: offre.titre , idZ: offre.id };
 }
 
 export default function CandidatureForm() {
@@ -50,6 +50,7 @@ export default function CandidatureForm() {
       console.log("offreContext:", offreContext);
   console.log("job title:", offreContext?.titre);
       if (offreContext) {
+        formData.append('offre', String(offreContext.id));
         formData.append('reference', offreContext.titre);
       }
 

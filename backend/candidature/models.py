@@ -1,5 +1,3 @@
-
-
 # Create your models here.
 # Define your databases tables
 
@@ -7,10 +5,12 @@ from django.db import models
 from django.utils.text import slugify
 from django.core.validators import FileExtensionValidator
 # Create your models here.
+TYPE_STAGE_CHOICES = [('pfe', 'Stage PFE'), ('ete', 'Stage été'), ('autre', 'Autre')]
+
 class Candidature(models.Model):
 
     nom = models.CharField(max_length=200)
-    email = models.CharField(max_length=200)
+    email = models.EmailField(max_length=254)
     telephone = models.CharField(max_length=200)
     cv = models.FileField(upload_to='cvs/',
         null=True,
@@ -22,9 +22,25 @@ class Candidature(models.Model):
     message = models.CharField(max_length=400, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+    type_stage = models.CharField(max_length=200, blank=True, choices=TYPE_STAGE_CHOICES)
+    ecole = models.CharField(max_length=200, blank=True)
+    niveau_etude = models.CharField(max_length=200, blank=True)
+    linkedin_url = models.URLField(max_length=200, blank=True)
+    consentement_date = models.DateTimeField(null=True, blank=True)
+    consentement_version = models.CharField(max_length=20, blank=True)
+    cv_nom_original = models.CharField(max_length=200, blank=True)
+    offre = models.ForeignKey('offres.Offre', null=True, blank=True, on_delete=models.SET_NULL, related_name='candidatures')
+    disponible_du = models.DateField(null=True, blank=True)
+    disponible_au = models.DateField(null=True, blank=True)
+    def save(self, *args, **kwargs):
+        if self.email:
+            self.email = self.email.strip().lower()
+        super().save(*args, **kwargs)
     class Meta:
         ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(fields=['email', 'offre'], name='unique_candidature_email_offre')
+        ]
 
     def __str__(self):
         return self.nom
