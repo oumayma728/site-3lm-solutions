@@ -1,0 +1,26 @@
+.expertise-detail-page{background:var(--bg);color:var(--ink);position:relative;overflow:clip}
+.expertise-bg{position:absolute;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    radial-gradient(620px circle at 12% 8%, rgba(109,107,255,.22), transparent 60%),
+    radial-gradient(560px circle at 92% 14%, rgba(34,211,238,.16), transparent 60%);
+}
+
+.detail-hero{position:relative;z-index:1;max-width:780px;margin:0 auto;padding:clamp(5rem,10vw,7rem) 1.5rem 3rem}
+.detail-back{display:inline-block;margin-bottom:1.5rem;font-size:.85rem;font-weight:600;color:var(--muted);text-decoration:none}
+.detail-back:hover{color:var(--a2)}
+.detail-hero .card-icon{width:52px;height:52px;border-radius:14px;margin-bottom:1.4rem}
+.detail-hero .card-icon svg{width:26px;height:26px}
+.detail-hero h1{margin:0 0 1.1rem;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(2.2rem,4.6vw,3.2rem);line-height:1.08;letter-spacing:-.03em}
+.detail-hero p{color:var(--muted);font-size:1.05rem;line-height:1.8;max-width:640px;margin:0 0 2rem}
+
+.detail-body{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:2rem 1.5rem 6rem;display:grid;grid-template-columns:1.3fr .9fr;gap:4rem;border-top:1px solid var(--line);padding-top:4rem}
+.detail-capabilities ul{list-style:none;margin:1.25rem 0 0;padding:0;display:grid;gap:.9rem}
+.detail-capabilities li{position:relative;padding-left:1.5rem;color:var(--ink);line-height:1.6;font-size:.98rem}
+.detail-capabilities li::before{content:'';position:absolute;left:0;top:.5em;width:8px;height:8px;border-radius:2px;background:var(--gradient)}
+.detail-tools .tech-pills{margin-top:1.25rem}
+
+.detail-others{margin-top:1.25rem}
+
+@media(max-width:800px){
+  .detail-body{grid-template-columns:1fr;gap:2.5rem}
+}

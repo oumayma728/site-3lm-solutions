@@ -1,0 +1,356 @@
+<title>Section Preuve 3LM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  /*
+    Layout concept: a condensed hero sliver (for context only) feeds directly
+    into one horizontal "evidence band" — tabular stat tiles on the left,
+    sector tags across the middle, one concrete outcome card on the right —
+    framed top and bottom by hairline rules so it reads as a single deliberate
+    strip, not three unrelated widgets stacked up.
+  */
+  :root {
+    --bg: #0A0D18;
+    --bg-raised: #121729;
+    --bg-card: #161C33;
+    --ink: #F4F2EC;
+    --ink-soft: #9299B5;
+    --ink-faint: #5C6485;
+    --accent: #FF6B4A;
+    --accent-soft: #3A2A28;
+    --line: rgba(244,242,236,0.09);
+    --line-strong: rgba(244,242,236,0.16);
+
+    --display: 'Archivo', 'Arial Black', sans-serif;
+    --body: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+    --mono: 'IBM Plex Mono', 'Consolas', monospace;
+
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--body);
+    margin: 0;
+  }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 24px;
+  }
+
+  /* ---------- tiny chrome, just for context ---------- */
+  .chrome {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-block: 22px;
+    border-bottom: 1px solid var(--line);
+  }
+  .brand {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .brand .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-soft);
+  }
+  .nav { display: flex; gap: 28px; font-size: 13px; color: var(--ink-soft); }
+  @media (max-width: 640px) { .nav { display: none; } }
+
+  .concept-badge {
+    position: fixed;
+    top: 18px; right: 18px;
+    z-index: 20;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    background: var(--bg-card);
+    border: 1px solid var(--line-strong);
+    padding: 7px 12px;
+    border-radius: 100px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .concept-badge::before {
+    content: '';
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+  }
+
+  /* ---------- hero sliver ---------- */
+  .hero {
+    padding-block: 72px 56px;
+    text-align: left;
+  }
+  .hero .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 16px;
+  }
+  .hero h1 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(32px, 5vw, 52px);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    margin: 0 0 18px;
+    max-width: 760px;
+    text-wrap: balance;
+  }
+  .hero h1 em {
+    font-style: normal;
+    color: var(--accent);
+  }
+  .hero p {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    max-width: 520px;
+    margin: 0;
+  }
+
+  /* ---------- evidence band ---------- */
+  .band {
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, var(--bg-raised), var(--bg));
+    padding-block: 52px;
+  }
+  .band-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 36px;
+    flex-wrap: wrap;
+  }
+  .band-head .label {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .band-head .label strong { color: var(--ink-soft); font-weight: 500; }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 40px;
+  }
+  .stat {
+    background: var(--bg-card);
+    padding: 24px 22px;
+  }
+  .stat .num {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    font-size: clamp(26px, 3vw, 34px);
+    color: var(--ink);
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+  }
+  .stat .num span { color: var(--accent); font-size: 0.55em; }
+  .stat .lbl {
+    margin-top: 6px;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    line-height: 1.4;
+  }
+  @media (max-width: 760px) {
+    .stat-row { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .evidence-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 28px;
+    align-items: stretch;
+  }
+  @media (max-width: 860px) {
+    .evidence-grid { grid-template-columns: 1fr; }
+  }
+
+  /* sector tags */
+  .sectors h3, .case h3 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.01em;
+    margin: 0 0 14px;
+    color: var(--ink);
+  }
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+  }
+  .tag {
+    font-size: 13px;
+    color: var(--ink-soft);
+    border: 1px solid var(--line-strong);
+    border-radius: 100px;
+    padding: 8px 16px;
+    background: var(--bg-card);
+    white-space: nowrap;
+  }
+  .tag.lead {
+    color: var(--ink);
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  /* case card */
+  .case {
+    background: var(--bg-card);
+    border: 1px solid var(--line-strong);
+    border-radius: 14px;
+    padding: 24px 26px;
+    position: relative;
+    overflow: hidden;
+  }
+  .case::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+  }
+  .case .kicker {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 8px;
+  }
+  .case .outcome {
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    margin: 0 0 18px;
+  }
+  .case .outcome strong { color: var(--ink); font-weight: 600; }
+  .case .metrics {
+    display: flex;
+    gap: 22px;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+  }
+  .case .metrics div {
+    font-family: var(--mono);
+    font-size: 19px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .case .metrics div + div { color: var(--accent); }
+  .case .metrics span {
+    display: block;
+    font-family: var(--body);
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    margin-top: 3px;
+    font-weight: 400;
+  }
+
+  .note {
+    max-width: 1180px;
+    margin: 28px auto 60px;
+    padding-inline: 24px;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    line-height: 1.6;
+  }
+</style>
+
+<div class="concept-badge">Maquette de concept</div>
+
+<div class="wrap">
+  <div class="chrome">
+    <div class="brand"><span class="dot"></span>3LM SOLUTIONS</div>
+    <div class="nav">
+      <span>Services</span><span>Carrières</span><span>Nearshore</span><span>Contact</span>
+    </div>
+  </div>
+
+  <div class="hero">
+    <p class="eyebrow">Studio tech — Ariana, Tunisie</p>
+    <h1>Des solutions digitales <em>pensées avec précision</em>.</h1>
+    <p>Développement web &amp; mobile, data, DevOps et nearshore — une seule équipe, du cadrage à la mise en production.</p>
+  </div>
+</div>
+
+<div class="band">
+  <div class="wrap">
+    <div class="band-head">
+      <p class="label">Nouvelle section proposée — <strong>sous le hero, avant les services</strong></p>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat">
+        <div class="num">40<span>+</span></div>
+        <div class="lbl">Projets livrés depuis 2020</div>
+      </div>
+      <div class="stat">
+        <div class="num">6<span>ans</span></div>
+        <div class="lbl">D'expérience terrain</div>
+      </div>
+      <div class="stat">
+        <div class="num">92<span>%</span></div>
+        <div class="lbl">Clients qui reviennent sur un 2ᵉ projet</div>
+      </div>
+      <div class="stat">
+        <div class="num">15</div>
+        <div class="lbl">Profils dédiés — dev, design, DevOps</div>
+      </div>
+    </div>
+
+    <div class="evidence-grid">
+      <div class="sectors">
+        <h3>Secteurs accompagnés</h3>
+        <div class="tag-row">
+          <span class="tag lead">E-commerce</span>
+          <span class="tag">Fintech</span>
+          <span class="tag">Santé</span>
+          <span class="tag">Logistique</span>
+          <span class="tag">Éducation</span>
+          <span class="tag">SaaS B2B</span>
+        </div>
+      </div>
+
+      <div class="case">
+        <p class="kicker">Étude de cas — exemple</p>
+        <p class="outcome"><strong>Application mobile de livraison</strong> pour un réseau de restaurants partenaires : cadrage, développement iOS/Android et tableau de bord admin, livrés en continu sur 4 mois.</p>
+        <div class="metrics">
+          <div>10K<span>utilisateurs actifs</span></div>
+          <div>4<span>mois, idée → prod</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="note">Maquette de concept — chiffres, secteurs et étude de cas sont illustratifs, à remplacer par vos vrais résultats avant mise en ligne. Aucun code du site n'a été modifié.</p>

@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+.site-lm {
+  --bg: #05060a;
+  --bg-soft: #0a0d16;
+  --ink: #f4f5fa;
+  --muted: #9aa1b8;
+  --line: rgba(255, 255, 255, 0.09);
+  --line-soft: rgba(255, 255, 255, 0.05);
+  --surface: rgba(52, 40, 40, 0.035);
+  --surface-solid: #0c0f1a;
+  --overlay: rgba(255, 255, 255, 0.06);
+  --overlay-soft: rgba(255, 255, 255, 0.02);
+  --scroll-bg: rgba(5, 6, 10, 0.72);
+  --panel-bg: rgba(5, 6, 10, 0.98);
+  --a: #6d6bff;
+  --a2: #22d3ee;
+  --violet: #a78bfa;
+  --gradient: linear-gradient(115deg, #6d6bff 0%, #22d3ee 100%);
+  --gradient-text: linear-gradient(100deg, #ffffff 25%, #b9c0ff 60%, #22d3ee 100%);
+  font-family: 'Inter', sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  transition: background .25s ease, color .25s ease;
+}
+
+html[data-theme="light"] .site-lm {
+  --bg: #f8f9fc;
+  --bg-soft: #eef0f6;
+  --ink: #14162a;
+  --muted: #5b6178;
+  --line: rgba(20, 22, 42, 0.1);
+  --line-soft: rgba(20, 22, 42, 0.06);
+  --surface: rgba(20, 22, 42, 0.035);
+  --surface-solid: #ffffff;
+  --overlay: rgba(20, 22, 42, 0.05);
+  --overlay-soft: rgba(20, 22, 42, 0.025);
+  --scroll-bg: rgba(248, 249, 252, 0.75);
+  --panel-bg: rgba(255, 255, 255, 0.98);
+  --a: #6d6bff;
+  --a2: #0e7490;
+  --violet: #7c3aed;
+  --gradient: linear-gradient(115deg, #6d6bff 0%, #0891b2 100%);
+  --gradient-text: linear-gradient(100deg, #14162a 20%, #4f46e5 55%, #0e7490 100%);
+}
+.site-lm *, .site-lm *::before, .site-lm *::after { box-sizing: border-box; }
+.site-lm a { color: inherit; }
+.site-lm button, .site-lm input, .site-lm textarea { font: inherit; }
+.site-lm { scroll-behavior: smooth; }
+.site-lm section[id] { scroll-margin-top: 88px; }
+.site-lm .gradient-text {
+  background: var(--gradient-text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

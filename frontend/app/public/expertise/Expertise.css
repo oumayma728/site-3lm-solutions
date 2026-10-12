@@ -1,0 +1,31 @@
+.expertise-page{background:var(--bg);color:var(--ink);position:relative;overflow:clip}
+.expertise-bg{position:absolute;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    radial-gradient(620px circle at 12% 8%, rgba(109,107,255,.22), transparent 60%),
+    radial-gradient(560px circle at 92% 14%, rgba(34,211,238,.16), transparent 60%);
+}
+
+.expertise-hero{position:relative;z-index:1;max-width:780px;margin:0 auto;padding:clamp(6rem,12vw,8rem) 1.5rem 4rem;text-align:center;display:flex;flex-direction:column;align-items:center}
+.expertise-hero h1{margin:22px 0;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(2.4rem,5vw,3.6rem);line-height:1.08;letter-spacing:-.03em}
+.expertise-hero p{color:var(--muted);font-size:1.05rem;line-height:1.75;margin:0}
+
+.expertise-grid-section{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:1rem 1.5rem 8rem}
+.expertise-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem;align-items:start}
+
+.expertise-grid .discipline-card{--accent:#6d6bff;overflow:hidden}
+.expertise-grid .discipline-card::before{
+  content:'';position:absolute;inset:0;z-index:0;opacity:.5;pointer-events:none;
+  background:radial-gradient(320px circle at 0% 0%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 70%);
+}
+.expertise-grid .discipline-card:hover{border-color:color-mix(in srgb, var(--accent) 50%, var(--line));background:color-mix(in srgb, var(--accent) 6%, transparent)}
+.expertise-grid .discipline-card > *{position:relative;z-index:1}
+
+.card-icon{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:color-mix(in srgb, var(--accent, #6d6bff) 16%, transparent);border:1px solid color-mix(in srgb, var(--accent, #6d6bff) 35%, transparent);color:var(--accent, #6d6bff)}
+.card-icon svg{width:22px;height:22px}
+
+@media(max-width:900px){
+  .expertise-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:600px){
+  .expertise-grid{grid-template-columns:1fr}
+}

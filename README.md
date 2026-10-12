@@ -1,176 +1,132 @@
-# Assistant IA de Génération de Devis & Ligne Directe — 3LM Solutions
+# 3LM Solutions — Assistant Devis IA, Ligne Directe & Chatbot
 
-Application interne développée dans le cadre d'un stage chez **3LM Solutions**. Elle couvre tout le parcours commercial : de l'appel client jusqu'au devis signé, en passant par la prise de rendez-vous de suivi.
-
-## Fonctionnalités
-
-### 1. Assistant devis (IA)
-- Fiche client (nom, entreprise, email, téléphone)
-- Saisie des besoins bruts du client (notes prises pendant l'appel)
-- Génération automatique par IA (Gemini) d'une synthèse professionnelle, d'une estimation chiffrée et des lignes de devis, à partir du catalogue de prestations de l'entreprise
-- Rattachement intelligent des lignes générées aux prestations du catalogue (prix de référence respectés)
-- Régénération / affinage du devis via des instructions complémentaires (ex. « ajouter une ligne maintenance », « réduire le budget de 20% »)
-- Modification manuelle des besoins avant validation
-- Validation du devis → génération d'un PDF personnalisé et envoi automatique par email au client
-- Téléchargement du PDF une fois le devis validé
-- Registre des devis avec recherche, filtres par statut, et suppression directe depuis l'interface
-
-### 2. Ligne directe (rendez-vous)
-- Registre des rendez-vous (appel téléphonique, visioconférence, ou sur site), liés ou non à un devis
-- Depuis la fiche d'un devis, un bandeau **Ligne directe** permet de proposer un rendez-vous en un clic (client et devis pré-remplis)
-- Cycle de statut : `demandé` → `confirmé` → `terminé`, ou `annulé`
-- Email de **proposition** automatique dès la création du rendez-vous (le client reçoit le créneau suggéré et est invité à confirmer sa disponibilité)
-- Email de **confirmation** automatique lorsque le manager valide le rendez-vous dans l'interface
-- Suppression directe depuis l'interface (registre ou fiche détail)
-
-## Scénario métier (logique complète)
-
-1. **Appel client** — le client appelle et décrit oralement ses besoins.
-2. **Prise de notes** — le manager saisit ces besoins bruts dans « Nouveau devis » (texte libre, pas besoin de le structurer).
-3. **Génération IA** — l'assistant produit automatiquement une synthèse, une estimation et des lignes de devis chiffrées, en s'appuyant sur le catalogue de prestations.
-4. **Relecture / ajustement** — le manager affine si besoin (instructions complémentaires ou modification manuelle des besoins).
-5. **Validation** — le devis est validé → un PDF personnalisé (logo, couleurs de l'entreprise) est généré et envoyé automatiquement par email au client : c'est le devis officiel.
-6. **Proposition de rendez-vous** — pour clarifier un point ou négocier, le manager propose un rendez-vous de suivi via le bandeau **Ligne directe** sur la fiche du devis (appel, visio, ou sur site).
-7. **Notification au client** — dès la création du rendez-vous (statut « demandé »), un email de proposition part automatiquement au client avec le créneau suggéré, en lui demandant de confirmer sa disponibilité (par téléphone ou en répondant à l'email) — l'outil n'ayant pas de portail client en libre-service, la confirmation se fait oralement ou par retour d'email.
-8. **Confirmation** — une fois l'accord du client obtenu, le manager clique sur « Confirmer » dans l'interface → statut « confirmé » + email de confirmation officielle envoyé au client (trace écrite du rendez-vous).
-9. **Suivi** — après l'échange, le manager marque le rendez-vous « Terminé ». En cas d'annulation ou d'absence de réponse, il passe à « Annulé ».
-10. **Registre** — devis et rendez-vous restent consultables, filtrables, et supprimables à tout moment depuis les registres `/devis` et `/rendezvous`.
-
-## Le PDF de devis
-
-Le PDF est généré avec **WeasyPrint** (et non plus xhtml2pdf, abandonné pour un rendu CSS trop limité : pas de courbes, mauvaise gestion des coins arrondis et des images). Design :
-
-- Bandeau plein largeur en dégradé de vague bleu marine / rouge (SVG vectoriel), avec le numéro du devis, un badge de statut coloré (brouillon / validé / envoyé...), le logo et le nom de 3LM Solutions
-- Bloc adresses Client / Entreprise, synthèse IA en encart coloré
-- Tableau des lignes à bordure arrondie rouge, catégories de prestations en puces colorées
-- Sous-total / TVA / barre « Total » pleine largeur
-- Bloc informations de paiement, conditions, et encadré Date/Signature
-- Pagination propre : si le devis dépasse une page, un espace d'en-tête (2 cm) est réservé sur les pages suivantes, et le tableau des lignes peut se répartir sur plusieurs pages sans perte de données (l'en-tête du tableau se répète automatiquement)
-
-### Installation de WeasyPrint (Windows)
-
-```bash
-cd backend
-venv\Scripts\activate
-pip install weasyprint
-```
-
-WeasyPrint dépend des librairies GTK (Pango/Cairo/GDK-PixBuf), absentes de Python sur Windows :
-
-1. Téléchargez et installez le [GTK3 runtime pour Windows](https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases) (`gtk3-runtime-*-win64.exe`), en cochant l'ajout au PATH.
-2. Redémarrez le terminal (ou l'ordinateur si besoin).
-3. Vérifiez : `python -c "import weasyprint; print('ok')"`.
-
-## Stack technique
-
-| Côté      | Technologies |
-|-----------|--------------|
-| Backend   | Django 5.2, Django REST Framework, PostgreSQL, Gemini API (`google-generativeai`), WeasyPrint (PDF), django-cors-headers |
-| Frontend  | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, Axios |
-| Email     | SMTP (Brevo) ou backend console en développement |
-
-## Structure du projet
+Application interne pour l'équipe commerciale de 3LM Solutions : génération de devis assistée par IA, prise de rendez-vous, et chatbot public du site, réunis dans un seul projet Django + Next.js.
 
 ```
 devis-assistant/
-├── docker-compose.yaml        # PostgreSQL en conteneur
-├── backend/
-│   ├── manage.py
-│   ├── .env                   # variables d'environnement (non versionné)
-│   ├── devis_project/         # settings, urls, wsgi
-│   └── devis/                 # app Django principale
-│       ├── models.py          # Client, Devis, Prestation, LigneDevis, RendezVous
-│       ├── serializers.py
-│       ├── views.py           # ViewSets DRF (devis, clients, prestations, rendezvous)
-│       ├── urls.py
-│       ├── admin.py
-│       ├── templates/devis/devis_pdf.html   # template PDF (WeasyPrint)
-│       └── services/
-│           ├── ia.py          # génération du devis via Gemini
-│           ├── pdf.py         # génération du PDF (WeasyPrint)
-│           └── email.py       # envoi devis + proposition/confirmation RDV
-└── frontend/
-    ├── app/
-    │   ├── devis/              # registre, création, détail du devis
-    │   └── rendezvous/         # registre, création, détail des rendez-vous (Ligne directe)
-    ├── components/             # Sidebar, LogoMark, AssistantPanel, DevisPreview, LigneDirectePanel, ...
-    └── lib/                    # api.ts, types.ts, devis.ts, rendezvous.ts, status.ts, statusRdv.ts
+├── backend/     Django + DRF + PostgreSQL
+└── frontend/    Next.js (App Router) + Tailwind
 ```
 
-## Installation
+## 1. Scénario complet
 
-### 1. Base de données
+Le module Ligne Directe fonctionne désormais en deux entrées, toutes les deux alimentant la même base de contacts (`Client`) et le même agenda (`RendezVous`) :
 
-```bash
-docker compose up -d
-```
+**A — Le visiteur prend rendez-vous seul, depuis le site public**
+1. Un visiteur ouvre la page d'accueil (`/`) puis clique sur « Prendre rendez-vous » (`/rendez-vous`, sans connexion) et remplit le formulaire : prénom, nom, email, téléphone, entreprise, besoin, date et heure souhaitées.
+2. Avant de choisir un créneau, le formulaire interroge `GET /api/rendezvous/creneaux/?date=` pour afficher les horaires déjà pris ce jour-là.
+3. À l'envoi, `POST /api/rendezvous/public/` (ouvert, sans authentification) vérifie qu'aucun rendez-vous actif n'existe déjà sur ce créneau (double vérification : côté serveur *et* contrainte SQL `creneau_unique_actif`), puis crée — ou retrouve — le `Client` correspondant (statut `nouveau`) et un `RendezVous` (statut `demande`, source `public`).
+4. Un email d'accusé de réception est envoyé automatiquement au visiteur.
 
-### 2. Backend (Django)
+**B — Le prospect appelle directement l'entreprise**
+1. Un commercial reçoit l'appel, ouvre l'espace admin (après connexion, voir §3) et crée une fiche `Client` avec ses coordonnées et son besoin.
+2. Le manager planifie lui-même un rendez-vous de qualification (`/rendezvous/nouveau`) — ce créneau passe par la même vérification anti-doublon.
+
+**La suite est commune aux deux parcours :**
+
+3. Le manager confirme le rendez-vous depuis le tableau de bord (`POST /api/rendezvous/{id}/confirmer/`) → le client reçoit un email de confirmation, et sa fiche passe de `nouveau` à `qualifié` dès qu'un devis est ouvert pour lui.
+4. Pendant ou après l'échange, le manager crée un **devis** pour ce client (`/devis/nouveau`) avec ses besoins bruts.
+5. Le manager clique sur « Générer avec l'IA » : Gemini synthétise le besoin, propose des lignes de prestation et une estimation chiffrée.
+6. Le manager ajuste les lignes si besoin, puis **valide** le devis : le PDF personnalisé (logo, couleurs 3LM) est généré et envoyé par email au client. La fiche client passe alors au statut `client`.
+7. Si un point reste à éclaircir, le manager propose un nouveau rendez-vous (visio, appel ou sur site), rattaché à ce devis — toujours soumis à la contrainte de créneau unique.
+8. Le rendez-vous a lieu ; le manager le marque « Terminé » ou, en cas d'annulation, « Annulé ».
+
+Ainsi, qu'un prospect arrive via le formulaire public ou par appel téléphonique, il suit le même pipeline : contact → rendez-vous → devis IA → validation/envoi → suivi.
+
+## 2. Backend (Django + PostgreSQL)
 
 ```bash
 cd backend
 python -m venv venv
-venv\Scripts\activate        # Windows
-# source venv/bin/activate   # Linux / macOS
+venv\Scripts\activate          # macOS/Linux : source venv/bin/activate
+pip install -r requirements.txt
 
-pip install django djangorestframework django-cors-headers psycopg2-binary python-dotenv google-generativeai weasyprint
+# .env : DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
+# .env : GEMINI_API_KEY (ou USE_MOCK_IA=true pour tester sans clé)
+# .env : EMAIL_HOST, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD (Brevo, voir §5)
+
 python manage.py migrate
-python manage.py createsuperuser  # facultatif, pour /admin/
+python manage.py createsuperuser   # compte admin pour se connecter au frontend
 python manage.py runserver
+# API disponible sur http://127.0.0.1:8000/api/
 ```
 
-### 3. Frontend (Next.js)
+### 2.1 Endpoints principaux
+
+| Méthode | URL                                        | Accès   | Description |
+|---------|----------------------------------------------|---------|--------------|
+| POST    | `/api/auth/token/`                            | public  | Connexion admin → `{ "token": "..." }` |
+| POST    | `/api/rendezvous/public/`                     | public  | Formulaire public : crée client + rendez-vous, envoie l'email |
+| GET     | `/api/rendezvous/creneaux/?date=`             | public  | Créneaux déjà pris pour une date |
+| GET/POST| `/api/clients/?search=&statut=`                | admin   | Gestion des prospects/clients (recherche, filtre statut) |
+| GET/POST| `/api/devis/`                                 | admin   | Gestion des devis |
+| POST    | `/api/devis/{id}/generer_ia/`                 | admin   | Génération IA (synthèse + lignes + estimation) |
+| POST    | `/api/devis/{id}/valider/`                    | admin   | Valide, génère le PDF et l'envoie par email |
+| GET     | `/api/devis/{id}/pdf/`                        | admin   | Télécharge le PDF (devis validé uniquement) |
+| GET/POST| `/api/rendezvous/`                            | admin   | Liste / création interne (filtrable par `?devis=&client=&statut=`) |
+| POST    | `/api/rendezvous/{id}/confirmer/`             | admin   | Confirme + email de confirmation |
+| POST    | `/api/rendezvous/{id}/annuler/`               | admin   | Annule le rendez-vous |
+| POST    | `/api/rendezvous/{id}/terminer/`              | admin   | Marque le rendez-vous comme terminé |
+
+L'authentification admin utilise un **token DRF** (`Authorization: Token <token>`), obtenu via `/api/auth/token/`. Toutes les routes admin sont protégées (`IsAuthenticated`) ; seules `/api/rendezvous/public/` et `/api/rendezvous/creneaux/` restent ouvertes.
+
+### 2.2 Anti-double réservation
+
+Un `UniqueConstraint` en base (`creneau_unique_actif`) empêche deux rendez-vous actifs (`demande` ou `confirme`) de partager la même date/heure, quel que soit le client. La même règle est vérifiée côté serializer avant l'écriture, pour renvoyer un message clair plutôt qu'une erreur SQL brute.
+
+## 3. Frontend (Next.js + Tailwind)
 
 ```bash
 cd frontend
 npm install
 npm run dev
+# Site public : http://localhost:3000/
+# Espace admin : http://localhost:3000/login (puis redirection vers /devis)
 ```
 
-Frontend sur `http://localhost:3000`, API sur `http://127.0.0.1:8000/api/`.
+- `/` — page d'accueil publique (vitrine 3LM Solutions), point d'entrée pour les visiteurs.
+- `/rendez-vous` — formulaire public de prise de rendez-vous, accessible sans connexion.
+- `/login` — connexion de l'équipe commerciale (token DRF stocké côté navigateur).
+- `/devis`, `/devis/nouveau`, `/devis/{id}` — registre des devis et génération IA.
+- `/rendezvous`, `/rendezvous/nouveau`, `/rendezvous/{id}` — agenda Ligne Directe ; les rendez-vous issus du formulaire public sont repérés par un badge « En ligne ».
+- `/prospects` — gestion des prospects/clients : recherche, filtre par statut (nouveau, contacté, qualifié, client, perdu), changement de statut inline, suppression.
 
-## Variables d'environnement (`backend/.env`)
+Toute page autre que `/reservation` et `/login` exige une session valide ; sans token, l'utilisateur est redirigé vers `/login`.
 
-```env
-DB_NAME=devis_db
-DB_USER=devis_user
-DB_PASSWORD=devis_pass
-DB_HOST=localhost
-DB_PORT=5432
+## 4. Génération IA des devis
 
-GEMINI_API_KEY=votre_cle_gemini
-USE_MOCK_IA=false          # true = simule la génération IA sans appeler Gemini
+La génération utilise l'API **Google Gemini** (modèle `gemini-3.5-flash`) via `google-generativeai`. Sans clé API valide, définir `USE_MOCK_IA=true` dans `.env` pour tester avec des données simulées. Si le quota Gemini est atteint, l'endpoint `generer_ia` renvoie une erreur 503/500 explicite plutôt que de planter silencieusement.
 
-EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+## 5. Envoi des emails (Brevo)
+
+Tous les emails (proposition de rendez-vous, confirmation, accusé de réception public, devis PDF) passent par `django.core.mail`, configuré pour le SMTP **Brevo** :
+
+```
 EMAIL_HOST=smtp-relay.brevo.com
 EMAIL_PORT=587
+EMAIL_HOST_USER=votre-compte-brevo
+EMAIL_HOST_PASSWORD=votre-cle-smtp-brevo
 EMAIL_USE_TLS=true
-EMAIL_HOST_USER=votre_identifiant_smtp
-EMAIL_HOST_PASSWORD=votre_mot_de_passe_smtp
-DEFAULT_FROM_EMAIL=contact@3lmsolutions.tn
+DEFAULT_FROM_EMAIL=3lmsolutions@gmail.com
 ```
 
-> En développement, `EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend` affiche les emails dans le terminal au lieu de les envoyer réellement.
+Si `EMAIL_HOST` est laissé vide, `EmailBackend` console affiche les emails dans le terminal (pratique en développement). Chaque endpoint renvoie un indicateur de succès/échec d'envoi (`email_warning`, `email_envoye`) plutôt que d'échouer silencieusement.
 
-## Principaux endpoints API
+## 6. PDF de devis
 
-| Méthode | Endpoint | Description |
-|---|---|---|
-| GET/POST | `/api/clients/` | Liste / création de clients |
-| GET/POST | `/api/devis/` | Liste / création de devis |
-| GET/PATCH/DELETE | `/api/devis/{id}/` | Détail / mise à jour / suppression |
-| POST | `/api/devis/{id}/generer_ia/` | Génère la synthèse + lignes via l'IA |
-| POST | `/api/devis/{id}/valider/` | Valide le devis, génère le PDF, l'envoie par email |
-| GET | `/api/devis/{id}/pdf/` | Télécharge le PDF (devis validé uniquement) |
-| GET/POST | `/api/prestations/` | Catalogue de prestations |
-| GET/POST | `/api/rendezvous/` | Liste / création de rendez-vous (filtrable par `?devis=`, `?client=`, `?statut=`) |
-| GET/PATCH/DELETE | `/api/rendezvous/{id}/` | Détail / mise à jour / suppression |
-| POST | `/api/rendezvous/{id}/confirmer/` | Confirme le rendez-vous + email de confirmation |
-| POST | `/api/rendezvous/{id}/annuler/` | Annule le rendez-vous |
-| POST | `/api/rendezvous/{id}/terminer/` | Marque le rendez-vous comme terminé |
+Généré avec **WeasyPrint** (rendu CSS complet, SVG natif) à partir d'un template HTML aux couleurs 3LM Solutions (bannière vague marine/rouge, logo, statut coloré). Pagination gérée via `@page` : la première page est pleine largeur (bannière en haut), les pages suivantes ont une marge de tête classique pour rester lisibles.
 
-## Notes
+## 7. Chatbot du site (assistant IA visiteur)
 
-- `USE_MOCK_IA=true` permet de tester le flux de bout en bout sans consommer de quota Gemini.
-- `DEBUG=True` et `SECRET_KEY` en dur dans `settings.py` sont adaptés au développement uniquement — à sécuriser avant toute mise en production.
-- Le module Ligne directe fonctionne aussi de façon 100% autonome (rendez-vous non lié à un devis), accessible via `/rendezvous/nouveau` sans paramètres.
+Un widget de chat (bulle en bas à droite) répond aux questions des visiteurs sur les services de 3LM Solutions et les oriente vers la prise de rendez-vous. Intégré depuis le projet `business-website-chatbot-main` (Cahier des charges N°1), porté dans `devis-assistant` :
+
+- **Backend** : app Django `chat` (`Conversation`, `Message`), endpoint public `POST /api/chat/messages/` (session par `session_id` stocké en `localStorage` côté visiteur), utilise l'API **OpenAI** (`gpt-4o-mini` par défaut) avec une base de connaissances (`backend/chat/knowledge_base/3lm_solutions.md`) décrivant les services, la mission et les coordonnées de l'entreprise. Sans `OPENAI_API_KEY`, le widget répond avec un message de repli explicite plutôt que d'échouer silencieusement.
+- **Frontend** : composant `ChatWidget` monté uniquement sur les pages publiques (`/`, `/rendez-vous`, `/login`) via `AppShell` — absent de l'espace admin.
+- **Variables d'environnement** (`.env` backend) : `OPENAI_API_KEY`, `OPENAI_MODEL` (def. `gpt-4o-mini`), `OPENAI_MAX_OUTPUT_TOKENS`, `OPENAI_TEMPERATURE`, `CHAT_CONTEXT_MESSAGE_LIMIT`.
+- L'historique des conversations est consultable dans `/admin/` (Django admin natif, modèles `Conversation`/`Message`).
+
+| Méthode | URL                                          | Accès   | Description |
+|---------|-----------------------------------------------|---------|--------------|
+| POST    | `/api/chat/messages/`                          | public  | Envoie un message, crée/poursuit une conversation, retourne la réponse IA |
+| GET     | `/api/chat/conversations/session/{session_id}/`| public  | Historique d'une conversation par session |
+| GET     | `/api/chat/conversations/{id}/`                | admin   | Historique d'une conversation par ID |
