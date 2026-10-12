@@ -22,7 +22,7 @@ class Candidature(models.Model):
     message = models.CharField(max_length=400, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    
     class Meta:
         ordering = ['-created_at']
 
