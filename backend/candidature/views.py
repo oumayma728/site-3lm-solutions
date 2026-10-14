@@ -8,15 +8,20 @@ from .models import Candidature
 from .serializers import CandidatureSerializer
 from django.core.mail import EmailMessage
 from django.conf import settings
+from rest_framework.throttling import ScopedRateThrottle
 import os
 
 
 class CandidatureViewSet(viewsets.ModelViewSet):
+    throttle_scope = 'candidature'
     queryset = Candidature.objects.all()
     serializer_class = CandidatureSerializer
     authentication_classes = [TokenAuthentication]
 
-
+    def get_throttles(self):
+        if self.action == 'create':
+            return [ScopedRateThrottle()]
+        return []
     def perform_create(self, serializer):
         candidature = serializer.save()
 

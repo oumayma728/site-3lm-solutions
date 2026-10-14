@@ -7,6 +7,15 @@ from django.core.validators import FileExtensionValidator
 # Create your models here.
 TYPE_STAGE_CHOICES = [('pfe', 'Stage PFE'), ('ete', 'Stage été'), ('autre', 'Autre')]
 
+# Single source of truth for the study levels. The stored value is the label itself,
+# so it reads clearly in the DB/admin and matches NIVEAUX_ETUDE in CandidatureForm.tsx.
+NIVEAU_ETUDE_CHOICES = [(n, n) for n in [
+    'Licence 1', 'Licence 2', 'Licence 3',
+    'Master 1', 'Master 2',
+    'Cycle ingénieur 1', 'Cycle ingénieur 2', 'Cycle ingénieur 3',
+    'Autre',
+]]
+
 class Candidature(models.Model):
 
     nom = models.CharField(max_length=200)
@@ -24,7 +33,7 @@ class Candidature(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     type_stage = models.CharField(max_length=200, blank=True, choices=TYPE_STAGE_CHOICES)
     ecole = models.CharField(max_length=200, blank=True)
-    niveau_etude = models.CharField(max_length=200, blank=True)
+    niveau_etude = models.CharField(max_length=200, blank=True, choices=NIVEAU_ETUDE_CHOICES)
     linkedin_url = models.URLField(max_length=200, blank=True)
     consentement_date = models.DateTimeField(null=True, blank=True)
     consentement_version = models.CharField(max_length=20, blank=True)

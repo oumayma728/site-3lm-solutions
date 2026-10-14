@@ -33,13 +33,14 @@ export default function SiteFooter() {
               <li><Link href="/public/rendez-vous">Prendre rendez-vous</Link></li>
               <li><Link href="/public/login">Espace équipe</Link></li>
               <li><a href="#footer">Contactez-nous</a></li>
+              <li><Link href="/public/confidentialite">Politique de confidentialité</Link></li>
             </ul>
           </div>
           <div className="footer-col">
             <h4>Contact</h4>
             <div className="footer-contact-item">📍 Ariana, Tunisie</div>
             <div className="footer-contact-item">📞 <a href="tel:+21656566533">+216 56 566 533</a></div>
-            <div className="footer-contact-item">✉️ <a href="mailto:3lmsolutions@gmail.com">contact@3lmsolutions.net</a></div>
+            <div className="footer-contact-item">✉️ <a href="mailto:contact@3lmsolutions.net">contact@3lmsolutions.net</a></div>
           </div>
         </div>
         <div className="footer-bottom">

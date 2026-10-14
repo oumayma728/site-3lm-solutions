@@ -164,3 +164,19 @@ EMAIL_PORT = int(os.getenv('EMAIL_PORT',"465"))
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER',"contact@3lmsolutions.net")
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'true').lower() == 'true'
+
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'candidature': '5/hour',   # max 5 applications per hour per IP
+        'login': '10/minute',        # max 10 login attempts per minute per IP
+    },
+}

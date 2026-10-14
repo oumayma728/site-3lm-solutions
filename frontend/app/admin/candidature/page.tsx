@@ -9,6 +9,12 @@ import {
 import PageHeader from '@/components/PageHeader';
 import { useToast } from '@/components/ToastProvider';
 
+const TYPE_STAGE_LABELS: Record<string, string> = {
+  pfe: 'Stage PFE',
+  ete: 'Stage d’été',
+  autre: 'Stage',
+};
+
 // Avatar colours, picked deterministically from the candidate name
 const AVATAR_COLORS = [
   'var(--accent-secondary)',
@@ -48,6 +54,12 @@ function relativeDate(iso: string) {
     month: 'short',
     year: 'numeric',
   });
+}
+
+// "2026-11-03" -> "03/11/2026" (parsed as a local date, no timezone shift)
+function formatJour(ymd: string) {
+  const [y, m, d] = ymd.split('-');
+  return `${d}/${m}/${y}`;
 }
 
 // Received less than 48h ago
@@ -236,6 +248,12 @@ export default function CandidaturesListPage() {
                       {c.reference || 'Poste non renseigné'}
                     </span>
                   </span>
+
+                  {TYPE_STAGE_LABELS[c.type_stage] && (
+                    <span className="mt-2 ml-1.5 inline-flex items-center rounded-lg bg-[var(--accent-amber)]/10 px-2.5 py-1 text-xs font-medium text-[var(--accent-amber)]">
+                      {TYPE_STAGE_LABELS[c.type_stage]}
+                    </span>
+                  )}
                 </div>
 
                 <time
@@ -394,6 +412,55 @@ export default function CandidaturesListPage() {
                 </div>
               </section>
 
+              {/* Background & availability */}
+              {(selectedCandidature.ecole ||
+                selectedCandidature.niveau_etude ||
+                selectedCandidature.linkedin_url ||
+                selectedCandidature.disponible_du) && (
+                <section className="mt-7">
+                  <p className="mb-3 text-[10px] uppercase tracking-wider text-[var(--ink-soft)] font-mono-num">
+                    Parcours
+                  </p>
+
+                  <div className="space-y-2 rounded-xl border border-[var(--line)] p-4">
+                    {[
+                      ['École', selectedCandidature.ecole],
+                      ['Niveau', selectedCandidature.niveau_etude],
+                      [
+                        'Disponibilité',
+                        selectedCandidature.disponible_du &&
+                          `${formatJour(selectedCandidature.disponible_du)}${
+                            selectedCandidature.disponible_au
+                              ? ` → ${formatJour(selectedCandidature.disponible_au)}`
+                              : ''
+                          }`,
+                      ],
+                    ]
+                      .filter(([, value]) => value)
+                      .map(([label, value]) => (
+                        <div key={label} className="flex items-center justify-between gap-4">
+                          <span className="text-sm text-[var(--ink-soft)]">{label}</span>
+                          <span className="text-right text-sm font-medium">{value}</span>
+                        </div>
+                      ))}
+
+                    {selectedCandidature.linkedin_url && (
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-sm text-[var(--ink-soft)]">LinkedIn</span>
+                        <a
+                          href={selectedCandidature.linkedin_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="truncate text-sm font-medium text-[var(--accent-secondary)] underline underline-offset-2"
+                        >
+                          Voir le profil ↗
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+
               {/* Job */}
               <section className="mt-7">
                 <p className="mb-3 text-[10px] uppercase tracking-wider text-[var(--ink-soft)] font-mono-num">
@@ -404,6 +471,11 @@ export default function CandidaturesListPage() {
                   <p className="text-sm font-medium">
                     {selectedCandidature.reference || 'Poste non renseigné'}
                   </p>
+                  {TYPE_STAGE_LABELS[selectedCandidature.type_stage] && (
+                    <p className="mt-1 text-sm text-[var(--ink-soft)]">
+                      {TYPE_STAGE_LABELS[selectedCandidature.type_stage]}
+                    </p>
+                  )}
                 </div>
               </section>
 
@@ -455,6 +527,34 @@ export default function CandidaturesListPage() {
                   </div>
                 )}
               </section>
+              {/* Consent */}
+              <section className="mt-7">
+                <p className="mb-3 text-[10px] uppercase tracking-wider text-[var(--ink-soft)] font-mono-num">
+                  Consentement données
+                </p>
+
+                <div className="rounded-xl border border-[var(--line)] p-4">
+                  {selectedCandidature.consentement_date ? (
+                    <p className="text-sm">
+                      <span className="font-medium text-[var(--accent-sage)]">✓ Accepté</span>{' '}
+                      <span className="text-[var(--ink-soft)]">
+                        le{' '}
+                        {new Date(selectedCandidature.consentement_date).toLocaleString('fr-FR', {
+                          dateStyle: 'short',
+                          timeStyle: 'short',
+                        })}
+                        {selectedCandidature.consentement_version &&
+                          ` (texte v${selectedCandidature.consentement_version})`}
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="text-sm text-[var(--ink-soft)]">
+                      Non enregistré (candidature antérieure au formulaire de consentement).
+                    </p>
+                  )}
+                </div>
+              </section>
+
               <div>
                 <button
                   type="button"
