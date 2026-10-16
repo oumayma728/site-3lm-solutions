@@ -16,6 +16,9 @@ NIVEAU_ETUDE_CHOICES = [(n, n) for n in [
     'Autre',
 ]]
 
+# Pre-selection: only an accepted candidature is sent to the CRM (intern management tool) for analysis
+STATUT_CHOICES = [('nouvelle', 'Nouvelle'), ('preselectionnee', 'Pré-sélectionnée')]
+
 class Candidature(models.Model):
 
     nom = models.CharField(max_length=200)
@@ -41,6 +44,10 @@ class Candidature(models.Model):
     offre = models.ForeignKey('offres.Offre', null=True, blank=True, on_delete=models.SET_NULL, related_name='candidatures')
     disponible_du = models.DateField(null=True, blank=True)
     disponible_au = models.DateField(null=True, blank=True)
+    statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='nouvelle')
+    crm_envoye_le = models.DateTimeField(null=True, blank=True)   # set once the CRM has received it
+    crm_tentatives = models.PositiveSmallIntegerField(default=0)
+    crm_erreur = models.CharField(max_length=300, blank=True)     # last send error, empty when fine
     def save(self, *args, **kwargs):
         if self.email:
             self.email = self.email.strip().lower()

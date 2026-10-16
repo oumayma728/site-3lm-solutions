@@ -165,6 +165,11 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER',"contact@3lmsolutions.net")
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'true').lower() == 'true'
 
+# CRM (internship management tool): accepted candidatures are sent there for analysis.
+# CRM_API_KEY must equal the CRM's CANDIDATES_API_KEY.
+CRM_API_URL = os.getenv('CRM_API_URL', '')
+CRM_API_KEY = os.getenv('CRM_API_KEY', '')
+
 
 
 REST_FRAMEWORK = {

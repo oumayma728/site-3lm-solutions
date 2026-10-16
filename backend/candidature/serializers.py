@@ -21,8 +21,11 @@ class CandidatureSerializer(serializers.ModelSerializer):
         model = Candidature
         fields = [
             'id', 'nom', 'email', 'telephone', 'cv', 'type_stage','ecole','niveau_etude','linkedin_url','consentement','site_web','consentement_date','consentement_version','cv_nom_original','disponible_du','disponible_au','offre', 'message','reference','created_at', 'updated_at',
+            'statut', 'crm_envoye_le', 'crm_erreur',
         ]
-        read_only_fields = ['id', 'type_stage', 'cv_nom_original', 'consentement_date', 'consentement_version', 'created_at', 'updated_at']
+        # statut / crm_* are set by the server only: the public form must never be able to pre-select itself
+        read_only_fields = ['id', 'type_stage', 'cv_nom_original', 'consentement_date', 'consentement_version', 'created_at', 'updated_at',
+                            'statut', 'crm_envoye_le', 'crm_erreur']
         validators = []
         extra_kwargs = {
             'niveau_etude': {'error_messages': {'invalid_choice': "Niveau d'études invalide."}},
