@@ -272,8 +272,10 @@ export default function CandidatureForm() {
         />
         <span>
           J’accepte que 3LM Solutions conserve et utilise les informations de ce formulaire et mon CV
-          pendant 6 mois pour étudier ma candidature et me recontacter. Je peux demander leur
-          suppression à tout moment. En savoir plus :{' '}
+          pendant 6 mois pour étudier ma candidature et me recontacter, y compris dans son outil
+          interne de suivi des stagiaires, où mon CV peut être analysé avec l’aide d’une IA (la
+          décision est toujours prise par une personne). Je peux demander leur suppression à tout
+          moment. En savoir plus :{' '}
           <a href="/public/confidentialite#candidatures" target="_blank" rel="noopener noreferrer">
             politique de confidentialité
           </a>.

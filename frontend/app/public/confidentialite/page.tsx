@@ -12,7 +12,7 @@ export const metadata = {
 };
 
 const EMAIL = 'contact@3lmsolutions.net';
-const MISE_A_JOUR = '13 octobre 2026';
+const MISE_A_JOUR = '19 octobre 2026';
 
 const sommaire = [
   { id: 'responsable', titre: 'Responsable du traitement' },
@@ -73,8 +73,8 @@ export default function ConfidentialitePage() {
                 </div>
                 <div role="row" className="privacy-row">
                   <span role="cell">Candidature</span>
-                  <span role="cell">Nom, email, téléphone, CV, message, offre visée</span>
-                  <span role="cell">Étudier votre candidature et vous recontacter</span>
+                  <span role="cell">Nom, email, téléphone, CV, message, offre visée, école, niveau d’études, disponibilités, profil LinkedIn</span>
+                  <span role="cell">Étudier votre candidature, vous recontacter et, si vous êtes retenu(e), préparer votre arrivée</span>
                 </div>
                 <div role="row" className="privacy-row">
                   <span role="cell">Contact</span>
@@ -111,6 +111,24 @@ export default function ConfidentialitePage() {
                 Solutions en charge du recrutement. Vous pouvez retirer votre consentement à tout
                 moment : votre candidature est alors supprimée.
               </p>
+              <p>
+                <strong>Outil interne de suivi des stagiaires.</strong> Si votre candidature est
+                présélectionnée, elle est transmise, avec votre CV, à notre outil interne de gestion
+                des stagiaires, utilisé par la même équipe.
+              </p>
+              <p>
+                <strong>Analyse assistée par IA.</strong> Dans cet outil, un membre de l’équipe peut
+                demander une analyse de votre CV : son texte et votre message de motivation sont
+                transmis à notre fournisseur d’IA, qui les compare aux projets en cours et propose
+                une note indicative, les compétences repérées, des points forts et des points à
+                approfondir. Cette analyse est une aide à la lecture :{' '}
+                <strong>aucune décision n’est prise automatiquement</strong>, l’acceptation ou le refus
+                de votre candidature est toujours décidé par une personne de l’équipe.
+              </p>
+              <p>
+                Nous vous informons de la décision par email. Si vous êtes retenu(e), vous recevez
+                un lien personnel pour créer votre compte stagiaire.
+              </p>
             </section>
 
             <section id="conservation">
@@ -118,8 +136,14 @@ export default function ConfidentialitePage() {
               <ul>
                 <li>
                   <strong>Candidatures et CV : 6 mois</strong> à compter de leur réception, puis
-                  supprimés — sauf si vous êtes recruté(e) ou si vous nous demandez une suppression
-                  plus tôt.
+                  supprimés automatiquement, sur ce site comme dans notre outil interne — sauf si
+                  vous êtes recruté(e) ou si vous nous demandez une suppression plus tôt.
+                </li>
+                <li>
+                  <strong>Si vous êtes recruté(e) :</strong> les informations utiles à votre stage
+                  (nom, email, école, type et dates de stage) sont conservées dans votre compte
+                  stagiaire le temps du stage et des démarches administratives qui en découlent
+                  (convention, attestation).
                 </li>
                 <li>
                   <strong>Demandes de contact, rendez-vous et devis :</strong> le temps nécessaire
@@ -142,8 +166,10 @@ export default function ConfidentialitePage() {
                 <li><strong>Notre hébergeur</strong>, qui stocke le site et sa base de données ;</li>
                 <li><strong>Notre messagerie</strong>, par laquelle nous recevons vos candidatures et demandes ;</li>
                 <li>
-                  <strong>Anthropic</strong>, fournisseur du modèle d’IA utilisé par l’assistant :
-                  les messages que vous lui écrivez lui sont transmis pour générer les réponses.
+                  <strong>Anthropic</strong>, fournisseur des modèles d’IA que nous utilisons : il reçoit
+                  les messages que vous écrivez à l’assistant, pour générer ses réponses, et, pour les
+                  candidatures présélectionnées, le texte du CV et du message de motivation lorsqu’une
+                  analyse est demandée (voir « Candidatures »).
                 </li>
               </ul>
             </section>
