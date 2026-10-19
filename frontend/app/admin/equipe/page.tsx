@@ -108,7 +108,7 @@ export default function EquipeListPage() {
                     </p>
 
                     <p className="mt-1 text-sm text-[var(--ink-soft)]">
-                        Ajoutez votre premier membre de l'équipe.
+                        Ajoutez votre premier membre de l’équipe.
                     </p>
 
                     <Link
