@@ -1,6 +1,6 @@
 # Create your models here.
 # Define your databases tables
-
+import os , uuid
 from django.db import models
 from django.utils.text import slugify
 from django.core.validators import FileExtensionValidator
@@ -19,12 +19,22 @@ NIVEAU_ETUDE_CHOICES = [(n, n) for n in [
 # Pre-selection: only an accepted candidature is sent to the CRM (intern management tool) for analysis
 STATUT_CHOICES = [('nouvelle', 'Nouvelle'), ('preselectionnee', 'Pré-sélectionnée')]
 
+
+def cv_upload_to(instance, filename):
+    """Random, unguessable file name. The name the candidate uploaded is kept in cv_nom_original.
+
+    CVs are never served from /media/: only through the authenticated GET /api/candidature/<id>/cv/.
+    """
+    ext = os.path.splitext(filename)[1].lower()
+    return f"cvs/{uuid.uuid4().hex}{ext}"
+
+
 class Candidature(models.Model):
 
     nom = models.CharField(max_length=200)
     email = models.EmailField(max_length=254)
     telephone = models.CharField(max_length=200)
-    cv = models.FileField(upload_to='cvs/',
+    cv = models.FileField(upload_to=cv_upload_to,
         null=True,
         blank=True,
         validators=[FileExtensionValidator(allowed_extensions=['pdf', 'doc', 'docx'])]

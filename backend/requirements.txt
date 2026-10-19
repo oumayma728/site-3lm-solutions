@@ -1,9 +1,14 @@
 Django==5.2.15
-djangorestframework
-django-cors-headers
-python-dotenv
-psycopg2-binary
-google-generativeai
-weasyprint
-openai
-requests
+djangorestframework==3.18.0
+django-cors-headers==4.9.0
+python-dotenv==1.2.3
+psycopg2-binary==2.9.12
+requests==2.34.2
+# Chatbot (chat/) and AI quotes (devis/services/ia.py)
+anthropic==1.4.0
+# PDF quotes (devis/services/pdf.py): needs Pango system libraries, installed by the Dockerfile
+weasyprint==69.0
+
+# Production
+gunicorn==26.2.0
+whitenoise==6.12.0

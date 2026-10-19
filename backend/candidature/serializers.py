@@ -9,18 +9,22 @@ MAX_CV_SIZE= 5*1024*1024  # 5MB
 PHONE_RE = re.compile(r'^\(?\+?[\d\s\-()]{8,20}$')
 
 # Bump this whenever the consent text in CandidatureForm.tsx changes
-CONSENTEMENT_VERSION = '2026-10-2'  # 2026-10-2: adds 6-month retention + privacy policy link
+# 2026-10-2: adds 6-month retention + privacy policy link
+# 2026-10-3: adds the transfer to the internal interns tool and the AI-assisted CV analysis
+CONSENTEMENT_VERSION = '2026-10-3'
 
 class CandidatureSerializer(serializers.ModelSerializer):
     # Checkbox sent by the form; the date and version are recorded server-side
     consentement = serializers.BooleanField(write_only=True, required=False)
     # Honeypot: hidden in the form, only bots fill it
     site_web = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    # The CV URL is never returned: the file is only downloadable via GET /candidature/<id>/cv/
+    has_cv = serializers.SerializerMethodField()
 
     class Meta:
         model = Candidature
         fields = [
-            'id', 'nom', 'email', 'telephone', 'cv', 'type_stage','ecole','niveau_etude','linkedin_url','consentement','site_web','consentement_date','consentement_version','cv_nom_original','disponible_du','disponible_au','offre', 'message','reference','created_at', 'updated_at',
+            'id', 'nom', 'email', 'telephone', 'cv', 'has_cv', 'type_stage','ecole','niveau_etude','linkedin_url','consentement','site_web','consentement_date','consentement_version','cv_nom_original','disponible_du','disponible_au','offre', 'message','reference','created_at', 'updated_at',
             'statut', 'crm_envoye_le', 'crm_erreur',
         ]
         # statut / crm_* are set by the server only: the public form must never be able to pre-select itself
@@ -28,8 +32,12 @@ class CandidatureSerializer(serializers.ModelSerializer):
                             'statut', 'crm_envoye_le', 'crm_erreur']
         validators = []
         extra_kwargs = {
+            'cv': {'write_only': True},
             'niveau_etude': {'error_messages': {'invalid_choice': "Niveau d'études invalide."}},
         }
+
+    def get_has_cv(self, obj):
+        return bool(obj.cv)
 
 
 

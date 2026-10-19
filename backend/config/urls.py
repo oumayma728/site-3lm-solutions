@@ -2,8 +2,6 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.throttling import ScopedRateThrottle
-from django.conf import settings
-from django.conf.urls.static import static
 
 
 class ThrottledObtainAuthToken(ObtainAuthToken):
@@ -21,4 +19,6 @@ urlpatterns = [
     path('api/', include('candidature.urls')),
     path('api/', include('contact.urls')),
     path('api/', include('equipe.urls')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+# /media/ is deliberately NOT served: it holds candidates' CVs (personal data).
+# CVs are downloaded only through the authenticated GET /api/candidature/<id>/cv/.

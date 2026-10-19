@@ -11,6 +11,7 @@ from .crm import envoyer_au_crm
 from .models import Candidature
 from .serializers import CandidatureSerializer
 from django.core.mail import EmailMessage
+from django.http import FileResponse, Http404
 from django.conf import settings
 from rest_framework.throttling import ScopedRateThrottle
 import os
@@ -50,9 +51,26 @@ class CandidatureViewSet(viewsets.ModelViewSet):
 
         if candidature.cv:
             email.attach(
-                os.path.basename(candidature.cv.name),
+                candidature.cv_nom_original or os.path.basename(candidature.cv.name),
                 candidature.cv.read()            )
         email.send()
+
+    @action(detail=True, methods=['get'])
+    def cv(self, request, pk=None):
+        """Download the CV. Staff only (see get_permissions): /media/ is never served publicly."""
+        candidature = self.get_object()
+        if not candidature.cv:
+            raise Http404("Aucun CV pour cette candidature.")
+        try:
+            fichier = candidature.cv.open('rb')
+        except (FileNotFoundError, OSError):
+            raise Http404("Le fichier CV est introuvable sur le serveur.")
+        return FileResponse(
+            fichier,
+            as_attachment=True,
+            filename=candidature.cv_nom_original or os.path.basename(candidature.cv.name),
+        )
+
     @action(detail=True, methods=['post'])
     def accepter(self, request, pk=None):
         """First acceptance: pre-select the candidature and send it to the CRM for analysis.
