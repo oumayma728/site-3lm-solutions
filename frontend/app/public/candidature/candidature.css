@@ -25,10 +25,15 @@
 .candidature-card .field-group{margin-bottom:1.1rem}
 .candidature-card .field-group:last-child{margin-bottom:0}
 .candidature-card label{display:block;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-.candidature-card input,.candidature-card textarea{width:100%;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.02);color:var(--ink);padding:12px 14px;font-size:13.5px;outline:none;transition:border-color .2s,box-shadow .2s;font-family:inherit}
+.candidature-card select option{background:var(--surface-solid);color:var(--ink)}
+.candidature-card input[type=date]{color-scheme:dark}
+:root[data-theme="light"] .candidature-card input[type=date]{color-scheme:light}
+.candidature-card input,.candidature-card textarea,.candidature-card select{width:100%;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.02);color:var(--ink);padding:12px 14px;font-size:13.5px;outline:none;transition:border-color .2s,box-shadow .2s;font-family:inherit}
 .candidature-card input::placeholder,.candidature-card textarea::placeholder{color:#5b6178}
-.candidature-card input:focus,.candidature-card textarea:focus{border-color:var(--a2);box-shadow:0 0 0 3px rgba(34,211,238,.14)}
+.candidature-card input:focus,.candidature-card textarea:focus,.candidature-card select:focus{border-color:var(--a2);box-shadow:0 0 0 3px rgba(34,211,238,.14)}
 .candidature-card textarea{resize:none}
+/* After the shared input rule, whose `background` shorthand would otherwise remove the arrow */
+.candidature-card select{appearance:none;cursor:pointer;padding-right:36px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239aa1b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
 .candidature-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.1rem}
 
 .candidature-dropzone{
@@ -41,11 +46,24 @@
 .candidature-dropzone span{font-size:.86rem;font-weight:600;color:var(--ink)}
 .candidature-dropzone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
 
+.candidature-card label.candidature-consent{display:flex;align-items:flex-start;gap:.7rem;margin:0 0 1.4rem;padding:.9rem 1rem;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.015);cursor:pointer;text-transform:none;letter-spacing:normal;font-size:.82rem;font-weight:500;line-height:1.55;color:var(--muted)}
+.candidature-card .candidature-consent input{flex-shrink:0;width:16px;height:16px;margin:.15rem 0 0;padding:0;accent-color:var(--a);cursor:pointer}
+.candidature-card .candidature-consent input:focus{box-shadow:none}
+.candidature-consent a{color:var(--a2);text-decoration:underline;text-underline-offset:2px}
+.candidature-consent:has(input:checked){border-color:rgba(109,107,255,.4);color:var(--ink)}
+
 .candidature-submit{width:100%;padding:14px;border:0;border-radius:12px;font-weight:700;font-size:14px;color:#04060d;background:var(--gradient);cursor:pointer;transition:transform .2s,box-shadow .2s}
 .candidature-submit:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 16px 34px rgba(109,107,255,.32)}
 .candidature-submit:disabled{opacity:.6;cursor:not-allowed}
 
 .candidature-error{margin:0 0 1.4rem;padding:.8rem 1rem;border-radius:10px;background:rgba(240,163,163,.1);border:1px solid rgba(240,163,163,.35);color:#f0a3a3;font-size:.85rem}
+
+.candidature-offre-error p{margin:0 0 .8rem;line-height:1.55}
+.candidature-offre-error strong{color:inherit}
+.candidature-offre-error-actions{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem 1rem}
+.candidature-offre-error-actions button{padding:.45rem .9rem;border-radius:8px;border:1px solid rgba(240,163,163,.45);background:transparent;color:inherit;font-size:.8rem;font-weight:600;cursor:pointer;transition:background .2s}
+.candidature-offre-error-actions button:hover{background:rgba(240,163,163,.12)}
+.candidature-offre-error-actions a{color:inherit;font-size:.8rem;font-weight:600;text-decoration:underline;text-underline-offset:2px}
 
 .candidature-success{text-align:center;padding:3.5rem 2rem}
 .candidature-success-icon{width:56px;height:56px;margin:0 auto 1.4rem;border-radius:50%;background:var(--gradient);display:flex;align-items:center;justify-content:center;color:#04060d;font-size:24px;font-weight:800}

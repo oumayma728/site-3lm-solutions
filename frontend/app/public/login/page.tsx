@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { login } from '@/lib/auth';
+import { login, TooManyAttemptsError } from '@/lib/auth';
 import Logo from '@/components/Logo';
 import '@/components/site/tokens.css';
 import '@/components/site/Auth.css';
@@ -24,8 +24,16 @@ function LoginForm() {
     try {
       await login(username, password);
       router.push(next);
-    } catch {
-      setError('Identifiants incorrects.');
+    } catch (err) {
+      if (err instanceof TooManyAttemptsError) {
+        setError(
+          err.retryAfterSeconds
+            ? `Trop de tentatives. Réessayez dans ${err.retryAfterSeconds} seconde${err.retryAfterSeconds > 1 ? 's' : ''}.`
+            : 'Trop de tentatives. Réessayez dans une minute.'
+        );
+      } else {
+        setError('Identifiants incorrects.');
+      }
     } finally {
       setLoading(false);
     }

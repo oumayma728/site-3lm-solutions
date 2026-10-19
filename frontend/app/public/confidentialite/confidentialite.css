@@ -1,0 +1,57 @@
+.privacy-page{background:var(--bg);color:var(--ink);position:relative;overflow:clip}
+.privacy-bg{position:absolute;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    radial-gradient(620px circle at 15% 6%, rgba(109,107,255,.18), transparent 60%),
+    radial-gradient(520px circle at 90% 12%, rgba(34,211,238,.12), transparent 60%);
+}
+
+.privacy-hero{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:clamp(6rem,12vw,8rem) 1.5rem 3rem;text-align:center;display:flex;flex-direction:column;align-items:center}
+.privacy-hero h1{margin:22px 0 14px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(2rem,4.4vw,3rem);line-height:1.1;letter-spacing:-.03em}
+.privacy-hero p{margin:0 0 1rem;color:var(--muted);font-size:1rem;line-height:1.7;max-width:540px}
+.privacy-hero small{font-size:.78rem;color:var(--muted)}
+
+.privacy-layout{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding:0 1.5rem 6rem;display:grid;grid-template-columns:220px 1fr;gap:3rem;align-items:start}
+
+.privacy-toc{position:sticky;top:6rem;border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:1.2rem 1.3rem}
+.privacy-toc strong{display:block;margin-bottom:.8rem;font-size:.7rem;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted)}
+.privacy-toc ol{list-style:none;margin:0;padding:0;display:grid;gap:.55rem;counter-reset:toc}
+.privacy-toc li{counter-increment:toc;font-size:.84rem}
+.privacy-toc li::before{content:counter(toc) '.';display:inline-block;width:1.4rem;color:var(--a2);font-weight:700}
+.privacy-toc a{color:var(--ink);text-decoration:none;transition:color .2s}
+.privacy-toc a:hover{color:var(--a2)}
+
+.privacy-content{display:grid;gap:2.6rem;min-width:0}
+.privacy-content section{scroll-margin-top:6rem}
+.privacy-content h2{margin:0 0 1rem;font-family:'Space Grotesk',sans-serif;font-size:1.25rem;font-weight:600}
+.privacy-content p{margin:0 0 .9rem;color:var(--muted);line-height:1.75;font-size:.95rem}
+.privacy-content p:last-child{margin-bottom:0}
+.privacy-content strong{color:var(--ink);font-weight:600}
+.privacy-content a:not(.gradient-button){color:var(--a2);text-decoration:underline;text-underline-offset:2px}
+.privacy-content ul{list-style:none;margin:0 0 .9rem;padding:0;display:grid;gap:.7rem}
+.privacy-content li{position:relative;padding-left:1.4rem;color:var(--muted);line-height:1.65;font-size:.94rem}
+.privacy-content li::before{content:'';position:absolute;left:0;top:.6em;width:7px;height:7px;border-radius:2px;background:var(--gradient)}
+
+.privacy-table{margin:0 0 1.1rem;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.privacy-row{display:grid;grid-template-columns:.8fr 1.4fr 1.2fr;gap:1rem;padding:.9rem 1.1rem;border-top:1px solid var(--line);font-size:.86rem;line-height:1.55;color:var(--muted)}
+.privacy-row span:first-child{color:var(--ink);font-weight:600}
+.privacy-row-head{border-top:0;background:var(--surface)}
+.privacy-row-head span,.privacy-row-head span:first-child{font-size:.7rem;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted)}
+
+.privacy-contact{display:flex;align-items:center;justify-content:space-between;gap:1.5rem;margin:1.4rem 0;padding:1.4rem 1.6rem;border-radius:16px;border:1px solid rgba(109,107,255,.35);background:linear-gradient(160deg, rgba(109,107,255,.1), rgba(34,211,238,.05))}
+.privacy-contact strong{display:block;margin-bottom:.3rem;font-family:'Space Grotesk',sans-serif;font-size:1rem}
+.privacy-contact p{margin:0;font-size:.88rem}
+.privacy-contact .gradient-button{flex-shrink:0}
+.privacy-note{font-size:.85rem}
+
+.privacy-back a{color:var(--muted);font-size:.85rem;font-weight:600;text-decoration:none}
+.privacy-back a:hover{color:var(--a2)}
+
+@media(max-width:860px){
+  .privacy-layout{grid-template-columns:1fr;gap:2rem}
+  .privacy-toc{position:static}
+}
+@media(max-width:620px){
+  .privacy-row-head{display:none}
+  .privacy-row{grid-template-columns:1fr;gap:.25rem}
+  .privacy-contact{flex-direction:column;align-items:flex-start}
+}

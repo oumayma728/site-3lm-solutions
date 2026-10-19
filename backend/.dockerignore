@@ -1,0 +1,12 @@
+# Never copy secrets, local environments or uploaded CVs into the image
+.env
+.env.*
+!.env.example
+venv/
+env/
+media/
+staticfiles/
+__pycache__/
+*.pyc
+*.log
+db.sqlite3

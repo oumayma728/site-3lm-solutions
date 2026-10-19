@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 import os
 from dotenv import load_dotenv
 
@@ -19,7 +20,9 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# Uploaded files (candidates' CVs). In production, point it to a persistent volume:
+# a container's own disk is wiped at every deploy. /media/ is never served publicly (see config/urls.py).
+MEDIA_ROOT = os.getenv('MEDIA_ROOT', os.path.join(BASE_DIR, 'media'))
 
 
 # Quick-start development settings - unsuitable for production
@@ -52,19 +55,10 @@ INSTALLED_APPS = [
     'equipe',
 ]
 
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
-    ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ],
-}
-
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',   # ← ajoute cette ligne en premier
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # serves /static/ (Django admin CSS) without Nginx
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -104,7 +98,29 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_PASSWORD'),
         'HOST': os.getenv('DB_HOST'),
         'PORT': os.getenv('DB_PORT'),
+        'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '60')),
     }
+}
+# Hosting platforms (Railway, Render…) give a single DATABASE_URL: it wins over the DB_* variables.
+if os.getenv('DATABASE_URL'):
+    _db = urlparse(os.environ['DATABASE_URL'])
+    DATABASES['default'].update({
+        'NAME': _db.path.lstrip('/'),
+        'USER': unquote(_db.username or ''),
+        'PASSWORD': unquote(_db.password or ''),
+        'HOST': _db.hostname,
+        'PORT': str(_db.port or 5432),
+    })
+
+# Shared cache: in production the rate limits (5 applications/hour, 10 logins/minute) must count across
+# all gunicorn workers, not per process. Table created by `python manage.py createcachetable`
+# (run at each deploy, see railway.toml). Local development (DEBUG=true, one process) keeps memory.
+CACHES = {
+    'default': (
+        {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}
+        if DEBUG else
+        {'BACKEND': 'django.core.cache.backends.db.DatabaseCache', 'LOCATION': 'django_cache'}
+    )
 }
 # Configuration Anthropic (chatbot du site)
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
@@ -148,6 +164,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'   # filled by `collectstatic`, served by WhiteNoise
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -164,3 +185,46 @@ EMAIL_PORT = int(os.getenv('EMAIL_PORT',"465"))
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER',"contact@3lmsolutions.net")
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'true').lower() == 'true'
+
+# CRM (internship management tool): accepted candidatures are sent there for analysis.
+# CRM_API_KEY must equal the CRM's CANDIDATES_API_KEY.
+CRM_API_URL = os.getenv('CRM_API_URL', '')
+CRM_API_KEY = os.getenv('CRM_API_KEY', '')
+
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'candidature': '5/hour',   # max 5 applications per hour per IP
+        'login': '10/minute',        # max 10 login attempts per minute per IP
+    },
+    # Behind the host's proxy every request comes from the proxy's IP: set NUM_PROXIES=1 in production
+    # so the limits apply to the real visitor (X-Forwarded-For). Leave unset locally.
+    'NUM_PROXIES': int(os.environ['NUM_PROXIES']) if os.getenv('NUM_PROXIES') else None,
+}
+
+
+# ── Production (HTTPS) ────────────────────────────────────────────────────────
+# Enabled with HTTPS=true on the server only, so local development and the tests stay on plain HTTP.
+if os.getenv('HTTPS', 'false').lower() == 'true':
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')  # the host terminates TLS
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    # Start low; raise to 31536000 (1 year) once the whole domain is confirmed to work over HTTPS
+    SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '3600'))
+
+# Errors go to the console, so they appear in the host's logs (Django's default hides them when DEBUG is off)
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {'console': {'class': 'logging.StreamHandler'}},
+    'root': {'handlers': ['console'], 'level': os.getenv('LOG_LEVEL', 'INFO')},
+}
