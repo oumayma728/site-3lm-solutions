@@ -7,7 +7,7 @@ nom: string;
   email: string;
   telephone: string;
   message: string;
-  cv: string; // URL to the uploaded CV file
+  has_cv: boolean; // the file itself is only downloadable with openCandidatureCv()
   created_at: string; // ISO date string
   consentement_date: string | null; // when the candidate accepted data processing
   consentement_version: string;
@@ -32,6 +32,20 @@ export async function getAllCandidaturesAdmin(): Promise<candidature[]> {
   const res = await api.get('/candidature/');
   return res.data;
 }
+// CVs are never public: download through the authenticated API (the token is sent in a header,
+// so a plain <a href> could not carry it), then hand the file to the browser.
+export async function openCandidatureCv(id: number, filename?: string): Promise<void> {
+  const res = await api.get(`/candidature/${id}/cv/`, { responseType: 'blob' });
+  const url = URL.createObjectURL(res.data);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename || 'cv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 export async function DeleteCandidatureAdmin(id: number): Promise<void> {
   await api.delete(`/candidature/${id}/`);
 }

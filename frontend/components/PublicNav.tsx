@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {LogoMark} from './LogoMark';
+import Logo from './Logo';
 
 export default function PublicNav() {
   const pathname = usePathname();
@@ -11,7 +11,7 @@ export default function PublicNav() {
     <header className="border-b border-[var(--line)] bg-[var(--surface)]">
       <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3">
-          <LogoMark size={36} />
+          <Logo height={36} />
           <div>
             <p className="font-display text-sm font-extrabold tracking-tight leading-tight">3LM SOLUTIONS</p>
             <p className="text-[10px] text-[var(--ink-soft)]">Conseil &amp; solutions digitales</p>

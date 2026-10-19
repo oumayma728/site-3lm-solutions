@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import {
-  getAllCandidaturesAdmin, DeleteCandidatureAdmin, accepterCandidature,
+  getAllCandidaturesAdmin, DeleteCandidatureAdmin, accepterCandidature, openCandidatureCv,
   type candidature,
 } from '@/lib/candidature';
 
@@ -152,6 +152,14 @@ export default function CandidaturesListPage() {
       toast.error('Impossible de supprimer la candidature.');
     }
   }
+  async function handleOpenCv(c: candidature) {
+    try {
+      await openCandidatureCv(c.id, c.cv_nom_original);
+    } catch {
+      toast.error('Impossible de télécharger le CV.');
+    }
+  }
+
   // First acceptance: pre-select and send to the CRM for analysis
   async function handleAccepter(id: number) {
     setAccepting(true);
@@ -637,12 +645,14 @@ export default function CandidaturesListPage() {
                   </a>
                 )}
 
-                {c.cv ? (
-                  <a
-                    href={c.cv}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
+                {c.has_cv ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenCv(c);
+                    }}
+                    title={c.cv_nom_original || 'Télécharger le CV'}
                     className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--accent-sage)]/30 bg-[var(--accent-sage)]/10 px-2.5 text-xs font-medium text-[var(--accent-sage)] transition hover:bg-[var(--accent-sage)]/20"
                   >
                     <svg aria-hidden width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -650,7 +660,7 @@ export default function CandidaturesListPage() {
                       <path d="M14 2v6h6" />
                     </svg>
                     CV
-                  </a>
+                  </button>
                 ) : (
                   <span className="flex h-8 items-center rounded-lg border border-dashed border-[var(--line)] px-2.5 text-xs text-[var(--ink-soft)]">
                     Sans CV
@@ -828,27 +838,26 @@ export default function CandidaturesListPage() {
                   Curriculum vitae
                 </p>
 
-                {selectedCandidature.cv ? (
-                  <a
-                    href={selectedCandidature.cv}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between rounded-xl border border-[var(--line)] p-4 transition hover:bg-[var(--line)]/30"
+                {selectedCandidature.has_cv ? (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenCv(selectedCandidature)}
+                    className="flex w-full items-center justify-between rounded-xl border border-[var(--line)] p-4 text-left transition hover:bg-[var(--line)]/30"
                   >
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm font-medium">
                         Curriculum vitae
                       </p>
 
-                      <p className="mt-1 text-xs text-[var(--ink-soft)]">
-                        Ouvrir le document
+                      <p className="mt-1 truncate text-xs text-[var(--ink-soft)]">
+                        {selectedCandidature.cv_nom_original || 'Télécharger le document'}
                       </p>
                     </div>
 
-                    <span className="text-sm font-medium text-[var(--accent-secondary)]">
-                      Voir le CV ↗
+                    <span className="shrink-0 text-sm font-medium text-[var(--accent-secondary)]">
+                      Télécharger ↓
                     </span>
-                  </a>
+                  </button>
                 ) : (
                   <div className="rounded-xl border border-[var(--line)] p-4">
                     <p className="text-sm text-[var(--ink-soft)]">
