@@ -1,5 +1,5 @@
 // Même convention que lib/api.ts (NEXT_PUBLIC_API_URL pointe déjà vers .../api)
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
+import { API_URL } from '@/lib/apiUrl';
 
 export interface ChatMessageResponse {
   conversation: { id: number; session_id: string };

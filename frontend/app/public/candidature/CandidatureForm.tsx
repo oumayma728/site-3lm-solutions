@@ -4,7 +4,7 @@ import { useState , useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import {Offre, getOffreBySlug } from '@/lib/offres';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
+import { API_URL } from '@/lib/apiUrl';
 
 // "Stage PFE" / "Stage d'été" for internships, "Poste" for jobs
 function offreLabel(offre: Offre) {

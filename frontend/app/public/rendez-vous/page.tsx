@@ -8,7 +8,7 @@ import { TYPE_RDV_CONFIG } from '@/lib/statusRdv';
 import '@/components/site/tokens.css';
 import '@/components/site/Booking.css';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
+import { API_URL } from '@/lib/apiUrl';
 
 const TRUST_POINTS = [
   'Réponse et confirmation sous 24h ouvrées',

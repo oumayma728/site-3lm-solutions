@@ -1,9 +1,10 @@
+import { API_URL } from '@/lib/apiUrl';
 import axios from 'axios';
 import { getToken, clearToken } from './auth';
 
 const api = axios.create({
   // Same variable as the rest of the site: set NEXT_PUBLIC_API_URL in production (e.g. https://api.<domain>/api)
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api',
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },

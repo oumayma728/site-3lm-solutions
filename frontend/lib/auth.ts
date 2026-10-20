@@ -1,5 +1,5 @@
 const TOKEN_KEY = 'admin_token';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
+import { API_URL } from '@/lib/apiUrl';
 
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;
