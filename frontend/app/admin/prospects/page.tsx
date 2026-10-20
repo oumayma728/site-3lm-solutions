@@ -75,7 +75,7 @@ export default function ProspectsPage() {
   };
 
   return (
-    <div className="px-8 py-10 max-w-5xl">
+    <div className="mx-auto w-full px-8 py-10 max-w-7xl">
       <PageHeader eyebrow="Ligne directe" title="Prospects" />
 
       {!loading && list.length > 0 && (
@@ -117,7 +117,7 @@ export default function ProspectsPage() {
                   className="text-xs uppercase tracking-wider font-mono-num px-3 py-2 rounded-full border transition-all duration-200"
                   style={
                     active
-                      ? { backgroundImage: 'linear-gradient(135deg, var(--accent-secondary), var(--accent-primary))', color: '#fff', borderColor: 'transparent' }
+                      ? { backgroundColor: 'var(--accent-primary)', color: '#fff', borderColor: 'transparent' }
                       : { borderColor: 'var(--line)' }
                   }
                 >
@@ -164,7 +164,7 @@ export default function ProspectsPage() {
               <div className="min-w-0 pr-4 flex items-center gap-3">
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold shrink-0"
-                  style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-secondary), var(--accent-primary))' }}
+                  style={{ backgroundColor: 'var(--accent-primary)' }}
                 >
                   {(c.prenom?.[0] ?? c.nom[0] ?? '?').toUpperCase()}
                 </div>

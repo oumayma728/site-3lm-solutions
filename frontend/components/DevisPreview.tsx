@@ -1,14 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { LigneDevis, Profil, Complexite, Devise, ModeTarification } from '@/lib/types';
+import { BudgetMentionne, LigneDevis, Profil, Complexite, Devise, ModeTarification, TarifModifie } from '@/lib/types';
 import { calcTotalLignes, calculerTva, convertirMontant, formatMontant, formatMontantConverti, parseMontant } from '@/lib/devis';
 
 interface DevisPreviewProps {
   lignes: LigneDevis[];
+  // Toujours calculé par le backend (somme des lignes, ou coût réel + marge).
   estimation?: number | string | null;
   clientNom?: string;
   devisId?: number;
+  numero?: string | null;
   readOnly?: boolean;
   devise?: Devise;
   onDeviseChange?: (devise: Devise) => void;
@@ -17,7 +19,20 @@ interface DevisPreviewProps {
   modeTarification?: ModeTarification;
   coutReel?: number | string | null;
   onCoutReelChange?: (coutReel: number) => void;
-  onSave?: (lignes: LigneDevis[], estimation: number) => Promise<void>;
+  onSave?: (lignes: LigneDevis[]) => Promise<void>;
+  // Analyse IA, affichée AVANT les lignes pour être vérifiée en premier.
+  hypotheses?: string[];
+  questionsOuvertes?: string[];
+  budgetMentionne?: BudgetMentionne | null;
+  // Brouillon dont les tarifs ont changé depuis le chiffrage.
+  tarifsModifies?: TarifModifie[];
+  onRecalculerPrix?: () => Promise<void>;
+}
+
+// Une ligne avec une estimation complète est chiffrée par le backend (mode IA).
+function estimationComplete(ligne: LigneDevis): boolean {
+  return Boolean(ligne.profil && ligne.jours_par_personne !== '' && ligne.jours_par_personne != null
+    && ligne.nombre_personnes && ligne.complexite);
 }
 
 const DEVISES: Devise[] = ['TND', 'EUR', 'USD'];
@@ -40,21 +55,21 @@ function emptyLigne(): LigneDevis {
     quantite: 1,
     prix_unitaire: 0,
     profil: '',
-    jours_estimes: '',
+    jours_par_personne: '',
     nombre_personnes: 1,
     complexite: '',
   };
 }
 
 export default function DevisPreview({
-  lignes, estimation, clientNom, devisId, readOnly, devise = 'TND', onDeviseChange,
+  lignes, estimation, clientNom, devisId, numero, readOnly, devise = 'TND', onDeviseChange,
   modeTarification = 'estimation_ia', coutReel, onCoutReelChange, onSave,
+  hypotheses = [], questionsOuvertes = [], budgetMentionne, tarifsModifies = [], onRecalculerPrix,
 }: DevisPreviewProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<LigneDevis[]>(lignes);
-  const [draftEstimation, setDraftEstimation] = useState<string>(estimation != null ? String(parseMontant(estimation)) : '');
-  const [estimationOverridden, setEstimationOverridden] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Champ "coût réel" (mode 'cout_reel' uniquement) — un brouillon texte
@@ -79,32 +94,24 @@ export default function DevisPreview({
     }
   };
 
-  useEffect(() => {
-    if (!editing) {
-      setDraft(lignes);
-      setDraftEstimation(estimation != null ? String(parseMontant(estimation)) : '');
-    }
-  }, [lignes, estimation, editing]);
-
-  // Tant que l'utilisateur n'a pas tapé sa propre valeur, "Estimation finale"
-  // suit automatiquement la somme des lignes — évite qu'elle reste figée à
-  // l'ancienne valeur pendant qu'on modifie les lignes.
-  useEffect(() => {
-    if (editing && !estimationOverridden) {
-      setDraftEstimation(String(calcTotalLignes(draft) || ''));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft, editing]);
-
   const total = calcTotalLignes(editing ? draft : lignes);
   const hasLignes = (editing ? draft : lignes).length > 0;
+  const aAnalyse = questionsOuvertes.length > 0 || hypotheses.length > 0 || Boolean(budgetMentionne);
 
   const startEditing = () => {
     setDraft(lignes.length > 0 ? lignes.map((l) => ({ ...l })) : [emptyLigne()]);
-    setDraftEstimation(estimation != null ? String(parseMontant(estimation)) : String(calcTotalLignes(lignes) || ''));
-    setEstimationOverridden(false);
     setError(null);
     setEditing(true);
+  };
+
+  const handleRecalculer = async () => {
+    if (!onRecalculerPrix) return;
+    setRecalculating(true);
+    try {
+      await onRecalculerPrix();
+    } finally {
+      setRecalculating(false);
+    }
   };
 
   const cancelEditing = () => {
@@ -138,11 +145,10 @@ export default function DevisPreview({
     setSaving(true);
     setError(null);
     try {
-      const estimationFinale = draftEstimation.trim() === '' ? calcTotalLignes(cleaned) : parseMontant(draftEstimation);
-      await onSave(cleaned, estimationFinale);
+      await onSave(cleaned);
       setEditing(false);
-    } catch {
-      setError('Impossible d’enregistrer les modifications.');
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : 'Impossible d’enregistrer les modifications.');
     } finally {
       setSaving(false);
     }
@@ -157,8 +163,8 @@ export default function DevisPreview({
           </p>
           <h2 className="font-display text-xl truncate">
             {clientNom ?? 'Client'}
-            {devisId != null && (
-              <span className="text-[var(--ink-soft)] font-normal text-base ml-2">#{devisId}</span>
+            {(numero || devisId != null) && (
+              <span className="text-[var(--ink-soft)] font-normal text-base ml-2">{numero ?? `#${devisId}`}</span>
             )}
           </h2>
         </div>
@@ -229,7 +235,7 @@ export default function DevisPreview({
                 onClick={handleSaveCoutReel}
                 disabled={savingCoutReel || coutReelDraft.trim() === ''}
                 className="text-xs font-semibold rounded-lg px-3.5 py-2 text-white transition-opacity disabled:opacity-40"
-                style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
+                style={{ backgroundColor: 'var(--accent-primary)' }}
               >
                 {savingCoutReel ? '...' : 'Enregistrer'}
               </button>
@@ -265,6 +271,63 @@ export default function DevisPreview({
               </>
             );
           })()}
+        </div>
+      )}
+
+      {/* Tarifs modifiés depuis le chiffrage (brouillon uniquement) : le devis
+          garde les prix du moment où il a été chiffré tant qu'on ne recalcule pas. */}
+      {!editing && !readOnly && tarifsModifies.length > 0 && (
+        <div className="px-6 py-3 border-b text-sm flex items-start justify-between gap-3"
+          style={{ background: '#FEF3C7', borderColor: '#F59E0B', color: '#92400E' }}>
+          <p>
+            <span className="font-semibold">Tarifs modifiés depuis le chiffrage</span> — {tarifsModifies.length} ligne(s)
+            utilisent un ancien TJM ou multiplicateur.
+          </p>
+          {onRecalculerPrix && (
+            <button
+              type="button"
+              onClick={handleRecalculer}
+              disabled={recalculating}
+              className="shrink-0 text-xs font-semibold rounded-full px-3 py-1.5 border transition-opacity disabled:opacity-40"
+              style={{ borderColor: '#B45309', color: '#92400E' }}
+            >
+              {recalculating ? 'Recalcul...' : 'Recalculer les prix'}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Analyse IA à vérifier AVANT les lignes : ce que l'IA a supposé et ce
+          qu'il faut encore demander au client. */}
+      {!editing && aAnalyse && (
+        <div className="px-6 py-4 border-b border-[var(--line)] space-y-3 text-sm">
+          {questionsOuvertes.length > 0 && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide mb-1.5" style={{ color: 'var(--accent-primary)' }}>
+                Questions à poser au client
+              </p>
+              <ul className="list-disc pl-5 space-y-1">
+                {questionsOuvertes.map((q, i) => <li key={i}>{q}</li>)}
+              </ul>
+            </div>
+          )}
+          {hypotheses.length > 0 && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide mb-1.5 text-[var(--ink-soft)]">Hypothèses retenues</p>
+              <ul className="list-disc pl-5 space-y-1 text-[var(--ink-soft)]">
+                {hypotheses.map((h, i) => <li key={i}>{h}</li>)}
+              </ul>
+            </div>
+          )}
+          {budgetMentionne && (
+            <p className="text-xs text-[var(--ink-soft)]">
+              Budget cité par le client :{' '}
+              <span className="font-mono-num font-semibold text-[var(--ink)]">
+                {new Intl.NumberFormat('fr-FR').format(budgetMentionne.montant)} {budgetMentionne.devise}
+              </span>{' '}
+              (pour information — il n&apos;intervient pas dans le calcul du prix)
+            </p>
+          )}
         </div>
       )}
 
@@ -323,13 +386,13 @@ export default function DevisPreview({
                     </select>
                   </div>
                   <div>
-                    <label className="text-[10px] uppercase tracking-wide text-[var(--ink-soft)] block mb-1">Jours</label>
+                    <label className="text-[10px] uppercase tracking-wide text-[var(--ink-soft)] block mb-1" title="Jours de travail de chaque personne">Jours / pers.</label>
                     <input
                       type="number"
                       min={0}
                       step="0.5"
-                      value={ligne.jours_estimes ?? ''}
-                      onChange={(e) => updateLigne(i, { jours_estimes: e.target.value })}
+                      value={ligne.jours_par_personne ?? ''}
+                      onChange={(e) => updateLigne(i, { jours_par_personne: e.target.value })}
                       className="w-full rounded-lg border border-[var(--line)] bg-[var(--paper)] px-2 py-1.5 text-sm font-mono-num outline-none focus:border-[var(--accent-secondary)] transition-colors"
                     />
                   </div>
@@ -372,7 +435,13 @@ export default function DevisPreview({
                       className="w-full rounded-lg border border-[var(--line)] bg-[var(--paper)] px-2.5 py-1.5 text-sm font-mono-num outline-none focus:border-[var(--accent-secondary)] transition-colors"
                     />
                   </div>
-                  {!modeCoutReel && (
+                  {!modeCoutReel && (estimationComplete(ligne) ? (
+                    /* Estimation complète : le prix est calculé par le backend
+                       (TJM × jours × personnes × multiplicateur), pas saisi. */
+                    <p className="col-span-2 self-end px-2.5 py-1.5 text-xs text-[var(--ink-soft)]">
+                      Prix calculé à l&apos;enregistrement à partir du profil, des jours et de la complexité.
+                    </p>
+                  ) : (
                     <>
                       <div>
                         <label className="text-[10px] uppercase tracking-wide text-[var(--ink-soft)] block mb-1">P.U. (DT)</label>
@@ -392,7 +461,7 @@ export default function DevisPreview({
                         </p>
                       </div>
                     </>
-                  )}
+                  ))}
                 </div>
               </div>
             ))}
@@ -407,44 +476,13 @@ export default function DevisPreview({
           </div>
 
           <div className="border-t border-[var(--line)] px-6 py-5 space-y-3" style={{ background: '#FAFAFB' }}>
-            {/* Sous-total/estimation par lignes n'ont pas de sens en mode
-                'cout_reel' (toutes les lignes sont à 0) — le prix final s'y
-                pilote depuis le panneau "Coût réel" plus haut, pas ici. */}
+            {/* Le total n'est plus saisi : il est toujours la somme des lignes
+                (recalculée par le backend à l'enregistrement). En mode
+                'cout_reel', le prix final se pilote depuis le panneau "Coût réel". */}
             {!modeCoutReel && (
-              <>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-[var(--ink-soft)]">Sous-total lignes</span>
-                  <span className="font-mono-num font-medium">{formatMontant(calcTotalLignes(draft))}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <label htmlFor="estimation" className="font-semibold">
-                    Estimation finale
-                    {estimationOverridden && (
-                      <button
-                        type="button"
-                        onClick={() => setEstimationOverridden(false)}
-                        className="ml-2 text-xs font-normal underline text-[var(--ink-soft)] hover:text-[var(--accent-secondary)]"
-                        title="Revenir au calcul automatique à partir des lignes"
-                      >
-                        ↺ recalculer
-                      </button>
-                    )}
-                  </label>
-                  <input
-                    id="estimation"
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={draftEstimation}
-                    onChange={(e) => {
-                      setEstimationOverridden(true);
-                      setDraftEstimation(e.target.value);
-                    }}
-                    className="w-32 text-right rounded-lg border border-[var(--line)] bg-[var(--surface)] px-2.5 py-1.5 text-sm font-mono-num font-bold outline-none focus:border-[var(--accent-primary)] transition-colors"
-                    style={{ color: 'var(--accent-primary)' }}
-                  />
-                </div>
-              </>
+              <p className="text-xs text-[var(--ink-soft)]">
+                Le total du devis est la somme des lignes, recalculée à l&apos;enregistrement.
+              </p>
             )}
 
             {error && <p className="text-xs text-[var(--accent-brick)]">{error}</p>}
@@ -463,7 +501,7 @@ export default function DevisPreview({
                 onClick={handleSave}
                 disabled={saving}
                 className="btn-press flex-1 text-sm font-semibold text-white rounded-lg py-2.5 transition-all duration-200 disabled:opacity-40"
-                style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
+                style={{ backgroundColor: 'var(--accent-primary)' }}
               >
                 {saving ? 'Enregistrement...' : 'Enregistrer'}
               </button>
@@ -496,7 +534,7 @@ export default function DevisPreview({
               const details = [
                 ligne.profil ? PROFIL_LABELS[ligne.profil as Profil] : null,
                 ligne.complexite ? COMPLEXITE_LABELS[ligne.complexite as Complexite] : null,
-                ligne.jours_estimes ? `${ligne.jours_estimes}j${ligne.nombre_personnes && ligne.nombre_personnes > 1 ? ` × ${ligne.nombre_personnes}` : ''}` : null,
+                ligne.jours_par_personne ? `${ligne.jours_par_personne}j${ligne.nombre_personnes && ligne.nombre_personnes > 1 ? ` × ${ligne.nombre_personnes} pers.` : ''}` : null,
               ].filter(Boolean);
               return (
                 <div
@@ -547,7 +585,7 @@ export default function DevisPreview({
                 return (
                   <>
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-[var(--ink-soft)]">Estimation IA (HT)</span>
+                      <span className="text-[var(--ink-soft)]">Total (HT)</span>
                       <span className="font-mono-num font-medium">{formatMontant(estimation, devise)}</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">

@@ -1,10 +1,20 @@
 from datetime import datetime
 
+from django.db import transaction
 from django.utils import timezone
-from rest_framework import serializers
+from rest_framework import serializers, status
+from rest_framework.exceptions import APIException
 from .models import Client, Devis, LigneDevis, Prestation, RendezVous
+from .services.chiffrage import chiffrer, recalculer_estimation, remplacer_lignes, tarifs_modifies
 from .services.currency import detecter_devise
-from .services.pricing import appliquer_marge_cout_reel
+from .services.pricing import TarificationError
+
+
+class DevisFige(APIException):
+    """409 : un devis validé ou envoyé ne se modifie plus (le client a reçu cette version)."""
+    status_code = status.HTTP_409_CONFLICT
+    default_detail = "Ce devis est validé : il ne peut plus être modifié. Créez un nouveau devis pour toute modification."
+    default_code = 'devis_fige'
 
 
 def _valider_creneau_futur(date_rdv, heure_rdv):
@@ -36,43 +46,77 @@ class LigneDevisSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'prestation', 'prestation_nom', 'description', 'quantite', 'prix_unitaire', 'total',
             # Champs d'estimation — remplis par l'IA ou modifiables manuellement.
-            # prix_unitaire reste éditable : ces champs servent de base au calcul,
-            # pas une valeur verrouillée (voir services.pricing.calculer_prix_ligne).
-            'profil', 'jours_estimes', 'nombre_personnes', 'complexite',
+            # Quand ils sont tous renseignés (mode 'estimation_ia'), prix_unitaire
+            # est RECALCULÉ côté serveur : la valeur envoyée est ignorée.
+            'profil', 'jours_par_personne', 'nombre_personnes', 'complexite',
+            # Instantané du calcul (lecture seule) — voir services.pricing.PrixLigne.
+            'tjm', 'multiplicateur', 'jours_personne', 'prix',
         ]
+        read_only_fields = ['tjm', 'multiplicateur', 'jours_personne', 'prix']
+        extra_kwargs = {'prix_unitaire': {'required': False, 'default': 0}}
 
 
 class DevisSerializer(serializers.ModelSerializer):
     lignes = LigneDevisSerializer(many=True, required=False)
     client_nom = serializers.CharField(source='client.nom', read_only=True)
+    client_email = serializers.CharField(source='client.email', read_only=True)   # affiché avant l'envoi
+    # Brouillon dont le TJM ou un multiplicateur a changé depuis le chiffrage.
+    tarifs_modifies = serializers.SerializerMethodField()
 
     class Meta:
         model = Devis
         fields = [
-            'id', 'client', 'client_nom', 'manager',
-            'besoins_client', 'synthese_ia', 'estimation_montant', 'devise',
-            'mode_tarification', 'cout_reel',
-            'statut', 'fichier_pdf', 'date_creation', 'date_modification',
-            'lignes',
+            'id', 'numero', 'version', 'client', 'client_nom', 'client_email', 'manager',
+            'besoins_client', 'synthese_ia', 'hypotheses', 'questions_ouvertes', 'budget_mentionne',
+            'ia_modele', 'ia_version_prompt',
+            'estimation_montant', 'devise', 'mode_tarification', 'cout_reel',
+            'statut', 'fichier_pdf', 'date_creation', 'date_modification', 'date_validation', 'date_validite',
+            'tarifs_modifies', 'lignes',
+        ]
+        # Le statut ne change que par les actions (valider, renvoyer…), le
+        # montant est toujours déduit des lignes ou du coût réel, et les champs
+        # IA ne viennent que de la génération.
+        read_only_fields = [
+            'numero', 'version', 'manager', 'hypotheses', 'questions_ouvertes', 'budget_mentionne',
+            'ia_modele', 'ia_version_prompt', 'estimation_montant', 'statut', 'fichier_pdf',
+            'date_validation', 'date_validite',
         ]
 
+    def get_tarifs_modifies(self, devis):
+        return tarifs_modifies(devis)
+
+    def _lignes_chiffrees(self, lignes_data, mode):
+        try:
+            return [chiffrer(ligne, mode) for ligne in lignes_data]
+        except TarificationError as exc:
+            raise serializers.ValidationError({'lignes': str(exc)})
+
+    def _recalculer(self, devis):
+        try:
+            recalculer_estimation(devis)
+        except TarificationError as exc:
+            raise serializers.ValidationError({'cout_reel': str(exc)})
+
+    @transaction.atomic
     def create(self, validated_data):
         lignes_data = validated_data.pop('lignes', [])
         # Devise détectée automatiquement depuis les besoins du client, sauf
         # si le front en envoie une explicitement (choix manuel côté aperçu).
         if 'devise' not in self.initial_data and validated_data.get('besoins_client'):
             validated_data['devise'] = detecter_devise(validated_data['besoins_client'])
-        # Mode 'cout_reel' : si un coût réel est fourni dès la création, on
-        # calcule tout de suite le prix final (coût + marge) — même logique
-        # que dans update() ci-dessous, voir le commentaire là-bas.
-        if validated_data.get('mode_tarification') == 'cout_reel' and validated_data.get('cout_reel') is not None:
-            validated_data['estimation_montant'] = appliquer_marge_cout_reel(validated_data['cout_reel'])
+        mode = validated_data.get('mode_tarification', 'estimation_ia')
+        lignes = self._lignes_chiffrees(lignes_data, mode)
+
         devis = Devis.objects.create(**validated_data)
-        for ligne_data in lignes_data:
-            LigneDevis.objects.create(devis=devis, **ligne_data)
+        remplacer_lignes(devis, lignes)
+        self._recalculer(devis)
+        devis.save(update_fields=['estimation_montant'])
         return devis
 
+    @transaction.atomic
     def update(self, instance, validated_data):
+        if instance.est_fige:
+            raise DevisFige()
         lignes_data = validated_data.pop('lignes', None)
 
         # Si les besoins du client changent sans que le front précise de
@@ -81,24 +125,26 @@ class DevisSerializer(serializers.ModelSerializer):
         if 'besoins_client' in validated_data and 'devise' not in self.initial_data:
             validated_data['devise'] = detecter_devise(validated_data['besoins_client'])
 
-        # Mode 'cout_reel' : dès que l'admin saisit/modifie le coût réel payé,
-        # on recalcule automatiquement estimation_montant = coût + marge —
-        # c'est ce champ que tout le reste de l'app lit déjà (aperçu, PDF,
-        # liste des devis), donc rien d'autre n'a besoin de savoir quel mode
-        # a été utilisé pour l'obtenir.
         mode = validated_data.get('mode_tarification', instance.mode_tarification)
-        if 'cout_reel' in validated_data and mode == 'cout_reel':
-            validated_data['estimation_montant'] = appliquer_marge_cout_reel(validated_data['cout_reel'])
+        mode_change = mode != instance.mode_tarification
+        # Lignes à (re)chiffrer : celles envoyées, ou les lignes existantes si
+        # seul le mode change (le prix doit suivre le nouveau mode).
+        if lignes_data is None and mode_change:
+            lignes_data = [
+                {f: getattr(l, f) for f in ('description', 'prestation', 'quantite', 'prix_unitaire', 'profil',
+                                            'jours_par_personne', 'nombre_personnes', 'complexite')}
+                for l in instance.lignes.all()
+            ]
+        lignes = self._lignes_chiffrees(lignes_data, mode) if lignes_data is not None else None
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+        if lignes is not None:
+            remplacer_lignes(instance, lignes)
+            instance.version += 1
+        # Toujours recalculé : somme des lignes ou coût réel + marge.
+        self._recalculer(instance)
         instance.save()
-
-        if lignes_data is not None:
-            instance.lignes.all().delete()
-            for ligne_data in lignes_data:
-                LigneDevis.objects.create(devis=instance, **ligne_data)
-
         return instance
 
 

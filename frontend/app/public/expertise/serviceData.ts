@@ -15,9 +15,10 @@ export const services: Service[] = [
         code: '01',
         color: '#8b5cf6',
         title: 'Intelligence Artificielle',
-        shortDescription: 'Agents autonomes, assistants métiers et modèles conçus pour automatiser vos décisions.',
+        shortDescription:
+            'Des agents IA et assistants métiers pour automatiser vos tâches et faciliter vos décisions.',
         longDescription:
-            "Nous concevons des agents IA et des assistants métiers adaptés à vos processus réels : chatbots capables de comprendre votre catalogue, systèmes d'aide à la décision, automatisation de tâches répétitives. L'objectif n'est jamais l'IA pour l'IA, mais un gain de temps ou de fiabilité mesurable sur un processus existant.",
+            "Nous concevons des agents IA et des assistants métiers adaptés à vos processus : assistants conversationnels, exploitation de données internes et automatisation de tâches répétitives. Chaque solution répond à un besoin concret, avec un objectif clair : gagner du temps, améliorer la fiabilité ou simplifier le travail de vos équipes.",
         capabilities: [
             'Chatbots et assistants conversationnels sur-mesure',
             'Agents autonomes connectés à vos données internes',
@@ -31,9 +32,10 @@ export const services: Service[] = [
         code: '02',
         color: '#22d3ee',
         title: 'Analyse des données',
-        shortDescription: 'Des données dispersées transformées en tableaux de bord fiables et exploitables au quotidien.',
+        shortDescription:
+            'Transformez vos données en indicateurs clairs pour mieux piloter votre activité.',
         longDescription:
-            "Nous structurons vos données pour qu'elles deviennent un outil de pilotage plutôt qu'un fichier de plus. Cela va de la centralisation de sources multiples jusqu'à la construction de tableaux de bord clairs, pensés pour vos équipes métiers plutôt que pour des data scientists.",
+            "Vos données doivent vous aider à piloter votre activité, pas simplement s'accumuler dans des fichiers. Nous centralisons les données issues de différentes sources, les structurons et les transformons en tableaux de bord et rapports adaptés à vos équipes métier. Vous disposez ainsi d'indicateurs plus lisibles pour suivre vos performances, identifier les tendances et prendre des décisions éclairées.",
         capabilities: [
             'Centralisation et nettoyage de données dispersées',
             'Tableaux de bord et reporting automatisé',
@@ -47,9 +49,10 @@ export const services: Service[] = [
         code: '03',
         color: '#34d399',
         title: 'IoT',
-        shortDescription: "Objets connectés et capteurs intégrés à vos systèmes pour un suivi en temps réel.",
+        shortDescription:
+            'Connectez vos équipements et capteurs pour suivre vos opérations et exploiter les données terrain.',
         longDescription:
-            "Nous connectons capteurs et équipements terrain à vos systèmes d'information pour un suivi en temps réel : supervision d'équipements, remontée d'alertes, collecte de mesures. Nous accompagnons aussi bien le choix du matériel que l'intégration logicielle qui en exploite les données.",
+            "Nous connectons vos capteurs et équipements à vos systèmes d'information pour collecter et exploiter les données du terrain. Selon vos besoins, nous mettons en place la remontée de mesures, les alertes, la supervision à distance et les tableaux de bord nécessaires au suivi de vos installations.",
         capabilities: [
             'Intégration de capteurs et équipements connectés',
             "Remontée de données en temps réel vers vos plateformes",
@@ -63,9 +66,10 @@ export const services: Service[] = [
         code: '04',
         color: '#fb923c',
         title: 'DevOps & Cloud',
-        shortDescription: 'Infrastructures fiables, déploiements automatisés et supervision continue.',
+        shortDescription:
+            'Des infrastructures maîtrisées et des déploiements automatisés pour des applications plus fiables.',
         longDescription:
-            "Nous mettons en place des infrastructures cloud fiables et des pipelines de déploiement automatisés, pour que vos équipes livrent plus vite et sans mauvaise surprise en production. Cela inclut la conteneurisation, l'automatisation CI/CD et la supervision continue de vos environnements.",
+            "Nous concevons et configurons des environnements cloud adaptés à vos applications et à vos contraintes. Conteneurisation, pipelines CI/CD, supervision et sauvegardes : nous aidons vos équipes à automatiser les mises en production, à mieux surveiller leurs environnements et à faciliter la maintenance de leurs applications.",
         capabilities: [
             'Mise en place de pipelines CI/CD',
             'Conteneurisation et orchestration (Docker, Kubernetes)',
@@ -79,9 +83,10 @@ export const services: Service[] = [
         code: '05',
         color: '#6d6bff',
         title: 'Développement Web',
-        shortDescription: 'Plateformes rapides, sécurisées et pensées pour scaler avec votre activité.',
+        shortDescription:
+            'Des sites et applications web sur mesure, conçus pour vos besoins métier et votre évolution.',
         longDescription:
-            "Nous développons des sites et plateformes web sur-mesure — vitrines, e-commerce ou applications métiers complexes — avec une attention particulière portée à la performance, la sécurité et la facilité de maintenance sur le long terme.",
+            "Nous concevons et développons des sites web, des plateformes et des applications métier adaptés à vos objectifs. De la création d'un site vitrine à la réalisation d'une application complexe, nous accordons une attention particulière à l'expérience utilisateur, à la sécurité, aux performances et à la maintenabilité.",
         capabilities: [
             'Sites vitrines et institutionnels',
             'Plateformes e-commerce',
@@ -95,9 +100,10 @@ export const services: Service[] = [
         code: '06',
         color: '#f472b6',
         title: 'Développement Mobile',
-        shortDescription: 'Applications iOS et Android natives ou cross-platform, connectées à vos systèmes.',
+        shortDescription:
+            'Des applications mobiles adaptées à vos utilisateurs et connectées à vos systèmes.',
         longDescription:
-            "Nous concevons des applications mobiles pensées pour vos utilisateurs réels, connectées à vos systèmes existants (ERP, CRM, API métiers). Selon vos contraintes de budget et de délai, nous orientons vers une approche cross-platform ou native.",
+            "Nous concevons des applications mobiles pour répondre aux usages de vos clients et de vos équipes. Connectées à vos API et systèmes existants, elles peuvent intégrer les fonctionnalités nécessaires à votre activité. Nous vous accompagnons dans le choix d'une approche native ou cross-platform selon vos besoins, votre budget et vos contraintes techniques.",
         capabilities: [
             'Applications iOS et Android cross-platform',
             'Intégration avec vos API et systèmes existants',
@@ -111,9 +117,10 @@ export const services: Service[] = [
         code: '07',
         color: '#fbbf24',
         title: 'Solutions ERP',
-        shortDescription: 'Digitalisation de vos processus métiers dans un système central et cohérent.',
+        shortDescription:
+            'Centralisez vos processus métier et simplifiez la gestion de votre activité.',
         longDescription:
-            "Nous accompagnons le déploiement, la configuration ou le développement de modules ERP adaptés à vos processus réels — gestion commerciale, stocks, facturation — pour remplacer les fichiers Excel éparpillés par un système central fiable.",
+            "Nous vous accompagnons dans le déploiement, la configuration ou l'adaptation de solutions ERP à vos processus métier. Gestion commerciale, stocks, facturation ou circulation des données : l'objectif est de mieux structurer vos opérations, de limiter les ressaisies et de disposer d'informations cohérentes au sein d'un système centralisé.",
         capabilities: [
             "Déploiement et configuration d'ERP",
             'Développement de modules métiers sur-mesure',
@@ -127,9 +134,10 @@ export const services: Service[] = [
         code: '08',
         color: '#f87171',
         title: 'Community Management',
-        shortDescription: 'Présence digitale et contenu géré pour développer votre visibilité en ligne.',
+        shortDescription:
+            'Une stratégie de contenu cohérente pour renforcer votre présence sur les réseaux sociaux.',
         longDescription:
-            "Nous gérons votre présence sur les réseaux sociaux avec une ligne éditoriale cohérente : création de contenu, planification de publications et suivi de performance, pour construire une audience engagée plutôt qu'une simple présence passive.",
+            "Nous vous accompagnons dans la gestion de votre présence sur les réseaux sociaux, de la définition de votre ligne éditoriale à la planification des publications. Création de contenu, animation des comptes et suivi des indicateurs : chaque action vise à renforcer votre visibilité et à développer une relation durable avec votre audience.",
         capabilities: [
             'Stratégie de contenu et ligne éditoriale',
             'Création de visuels et publications',

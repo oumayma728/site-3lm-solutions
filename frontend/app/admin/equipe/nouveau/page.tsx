@@ -6,7 +6,7 @@ import EmployeForm from '@/components/EmployeForm';
 
 export default function NouveauEmployePage() {
     return (
-        <div className="px-8 py-10">
+        <div className="mx-auto w-full max-w-4xl px-8 py-10">
             <Link
                 href="/admin/equipe"
                 className="text-xs font-mono-num text-[var(--ink-soft)] hover:text-[var(--accent-primary)] transition-colors"

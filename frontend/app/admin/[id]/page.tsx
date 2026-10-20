@@ -99,7 +99,7 @@ export default function ClientHistoriquePage() {
 
   if (loading) {
     return (
-      <div className="px-8 py-10 max-w-5xl">
+      <div className="mx-auto w-full px-8 py-10 max-w-7xl">
         <div className="animate-pulse space-y-4">
           <div className="h-4 w-32 rounded bg-[var(--line)]" />
           <div className="h-10 w-64 rounded bg-[var(--line)]" />
@@ -111,7 +111,7 @@ export default function ClientHistoriquePage() {
 
   if (error || !client) {
     return (
-      <div className="px-8 py-10 max-w-4xl">
+      <div className="mx-auto w-full px-8 py-10 max-w-4xl">
         <p className="text-[var(--accent-brick)] text-sm mb-4">{error ?? 'Client introuvable.'}</p>
         <Link href="/admin/prospects" className="text-sm font-semibold underline underline-offset-4" style={{ color: 'var(--accent-secondary)' }}>
           Retour aux prospects
@@ -123,7 +123,7 @@ export default function ClientHistoriquePage() {
   const statutCfg = STATUT_CLIENT_CONFIG[client.statut ?? 'nouveau'];
 
   return (
-    <div className="px-8 py-10 max-w-5xl">
+    <div className="mx-auto w-full px-8 py-10 max-w-7xl">
       <Link href="/admin/prospects" className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--accent-secondary)' }}>
         ← Prospects
       </Link>
@@ -133,7 +133,7 @@ export default function ClientHistoriquePage() {
         <div className="flex items-center gap-4 min-w-0">
           <div
             className="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-lg font-bold shrink-0"
-            style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-secondary), var(--accent-primary))' }}
+            style={{ backgroundColor: 'var(--accent-primary)' }}
           >
             {(client.prenom?.[0] ?? client.nom[0] ?? '?').toUpperCase()}
           </div>
@@ -161,7 +161,7 @@ export default function ClientHistoriquePage() {
           <Link
             href={`/admin/devis/nouveau?client=${client.id}`}
             className="btn-press text-white px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
-            style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
+            style={{ backgroundColor: 'var(--accent-primary)' }}
           >
             + Devis
           </Link>

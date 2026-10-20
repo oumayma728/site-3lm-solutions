@@ -31,7 +31,6 @@ export default function SiteFooter() {
             <ul>
               <li><Link href="/">Accueil</Link></li>
               <li><Link href="/public/rendez-vous">Prendre rendez-vous</Link></li>
-              <li><Link href="/public/login">Espace équipe</Link></li>
               <li><a href="#footer">Contactez-nous</a></li>
               <li><Link href="/public/confidentialite">Politique de confidentialité</Link></li>
             </ul>

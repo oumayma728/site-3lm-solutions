@@ -235,6 +235,49 @@ class CvProtectionTests(APITestCase):
         self.assertEqual(mail.outbox[-1].attachments[0][0], 'Mon CV.pdf')
 
 
+@override_settings(MEDIA_ROOT=MEDIA, EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
+                   DEFAULT_FROM_EMAIL='contact@test.tn', CANDIDATURES_PAR_OFFRE_MAX=2)
+class LimiteParOffreTests(APITestCase):
+    """One IP cannot flood an offer by changing the email; only successful applications count."""
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        self.addCleanup(cache.clear)
+        self.offre = Offre.objects.create(titre='Dev web', type_offre='emploi', description='d')
+        self.autre = Offre.objects.create(titre='Dev mobile', type_offre='emploi', description='d')
+
+    def postuler(self, email, offre=None, **extra):
+        data = {'nom': 'Test', 'email': email, 'telephone': '20 000 000', 'consentement': True,
+                'offre': (offre or self.offre).id, **extra}
+        return self.client.post('/api/candidature/', data, format='multipart')
+
+    def test_third_application_to_the_same_offer_is_refused(self):
+        self.assertEqual(self.postuler('a@x.tn').status_code, 201)
+        self.assertEqual(self.postuler('b@x.tn').status_code, 201)
+        r = self.postuler('c@x.tn')
+        self.assertEqual(r.status_code, 429)
+        self.assertIn('cette offre', r.data['detail'])
+        self.assertIn('Retry-After', r)
+        self.assertEqual(Candidature.objects.filter(offre=self.offre).count(), 2)
+
+    def test_other_offers_are_not_affected(self):
+        self.postuler('a@x.tn')
+        self.postuler('b@x.tn')
+        self.assertEqual(self.postuler('c@x.tn', offre=self.autre).status_code, 201)
+
+    def test_failed_submissions_do_not_count(self):
+        for _ in range(3):
+            self.assertEqual(self.postuler('a@x.tn', consentement=False).status_code, 400)
+        self.assertEqual(self.postuler('a@x.tn').status_code, 201)
+
+    def test_mail_failure_does_not_fail_the_application(self):
+        with patch('django.core.mail.EmailMessage.send', side_effect=OSError('smtp down')):
+            r = self.postuler('a@x.tn')
+        self.assertEqual(r.status_code, 201)
+        self.assertTrue(Candidature.objects.filter(email='a@x.tn').exists())
+
+
 RETENTION_MEDIA = tempfile.mkdtemp()
 
 

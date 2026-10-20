@@ -46,7 +46,7 @@ export default function AssistantPanel({
         <div className="flex items-center gap-3">
           <div
             className="w-10 h-10 rounded-xl text-white flex items-center justify-center shrink-0"
-            style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))', boxShadow: 'var(--shadow-glow)' }}
+            style={{ backgroundColor: 'var(--accent-primary)', boxShadow: 'var(--shadow-glow)' }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
@@ -85,7 +85,7 @@ export default function AssistantPanel({
                       setShowBesoinsEdit(false);
                     }}
                     className="text-xs text-white px-3 py-1.5 rounded-lg font-medium"
-                    style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
+                    style={{ backgroundColor: 'var(--accent-primary)' }}
                   >
                     Enregistrer
                   </button>
@@ -126,7 +126,7 @@ export default function AssistantPanel({
           <div className="flex gap-3">
             <div
               className="w-7 h-7 shrink-0 rounded-full text-white flex items-center justify-center text-[10px] font-mono-num"
-              style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
+              style={{ backgroundColor: 'var(--accent-primary)' }}
             >
               IA
             </div>
@@ -156,7 +156,7 @@ export default function AssistantPanel({
                 onClick={() => onGenerate('')}
                 disabled={generating}
                 className="inline-flex items-center gap-2 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 disabled:opacity-40 hover:shadow-lg hover:-translate-y-0.5"
-                style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
+                style={{ backgroundColor: 'var(--accent-primary)' }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
@@ -216,7 +216,7 @@ export default function AssistantPanel({
               onClick={handleGenerate}
               disabled={generating}
               className="btn-press shrink-0 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 disabled:opacity-40 flex items-center gap-2 hover:shadow-lg hover:-translate-y-0.5"
-              style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
+              style={{ backgroundColor: 'var(--accent-primary)' }}
             >
               {generating ? (
                 'Génération...'

@@ -82,14 +82,50 @@ export async function genererDevisIA(
   return res.data;
 }
 
+// Valide (le devis est alors figé) puis envoie au client. Le backend répond
+// 207 si la validation a réussi mais pas l'email : le devis est renvoyé quand même.
 export async function validerDevis(id: number | string): Promise<Devis> {
   const res = await api.post(`/devis/${id}/valider/`);
   return res.data.devis;
 }
 
+// Renvoie l'email d'un devis validé dont l'envoi avait échoué.
+export async function renvoyerDevis(id: number | string): Promise<Devis> {
+  const res = await api.post(`/devis/${id}/renvoyer/`);
+  return res.data.devis;
+}
+
+// Rechiffre un brouillon avec les tarifs actuels (TJM, multiplicateurs).
+export async function recalculerPrixDevis(id: number | string): Promise<Devis> {
+  const res = await api.post(`/devis/${id}/recalculer_prix/`);
+  return res.data;
+}
+
+// Le PDF exact qui partira au client, à relire avant de valider. Renvoie une
+// URL locale (blob) à libérer avec URL.revokeObjectURL une fois fermée.
+export async function apercuPdfDevis(id: number | string): Promise<string> {
+  const res = await api.get(`/devis/${id}/apercu/`, { responseType: 'blob' });
+  return window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+}
+
+// Message d'erreur renvoyé par l'API (champ 'error', 'detail' ou erreurs de champ), sinon le texte par défaut.
+export function messageErreurApi(err: unknown, parDefaut: string): string {
+  const data = (err as { response?: { data?: unknown } })?.response?.data;
+  if (data && typeof data === 'object') {
+    const d = data as Record<string, unknown>;
+    if (typeof d.error === 'string') return d.error;
+    if (typeof d.detail === 'string') return d.detail;
+    const premier = Object.values(d).flat().find((v) => typeof v === 'string');
+    if (typeof premier === 'string') return premier;
+  }
+  return parDefaut;
+}
+
+// estimation_montant n'est jamais envoyé : le backend le déduit des lignes
+// (ou du coût réel + marge), pour qu'il ne puisse pas contredire le détail.
 export async function updateDevis(
   id: number | string,
-  data: Partial<Pick<Devis, 'besoins_client' | 'synthese_ia' | 'estimation_montant' | 'devise' | 'mode_tarification' | 'cout_reel'>> & {
+  data: Partial<Pick<Devis, 'besoins_client' | 'synthese_ia' | 'devise' | 'mode_tarification' | 'cout_reel'>> & {
     lignes?: LigneDevis[];
   }
 ): Promise<Devis> {
@@ -107,7 +143,8 @@ export async function telechargerPdfDevis(id: number | string): Promise<void> {
   const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
   const link = document.createElement('a');
   link.href = url;
-  link.setAttribute('download', `devis_${id}.pdf`);
+  const nom = /filename="([^"]+)"/.exec(res.headers?.['content-disposition'] ?? '')?.[1] ?? `devis_${id}.pdf`;
+  link.setAttribute('download', nom);
   document.body.appendChild(link);
   link.click();
   link.remove();
