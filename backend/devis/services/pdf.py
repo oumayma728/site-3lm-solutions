@@ -23,9 +23,9 @@ CACHET_PATH = Path(settings.BASE_DIR) / 'devis' / 'static' / 'devis' / 'cachet.j
 
 COMPANY_INFO = {
     'nom': '3LM Solutions',
-    'adresse': 'Ariana',
-    'email': '3lmsolutions@gmail.com',
-    'telephone': '',
+    'adresse': 'Ariana, Tunisie',
+    'email': 'contact@3lmsolutions.net',
+    'telephone': '+216 56 566 533',
 }
 
 STATUT_STYLE = {

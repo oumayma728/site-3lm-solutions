@@ -111,6 +111,21 @@ function alreadySent(c: candidature) {
   return !!c.crm_envoye_le;
 }
 
+// Status tabs: where each candidature stands in the pre-selection / CRM pipeline
+const STATUT_TABS: { value: EnvoiFiltre; label: string; color: string }[] = [
+  { value: 'all', label: 'Toutes', color: 'var(--ink)' },
+  { value: 'a_traiter', label: 'Nouvelles', color: 'var(--accent-secondary)' },
+  { value: 'a_renvoyer', label: 'À renvoyer au CRM', color: 'var(--accent-amber)' },
+  { value: 'envoyees', label: 'Envoyées au CRM', color: 'var(--accent-sage)' },
+];
+
+function matchesStatut(c: candidature, tab: EnvoiFiltre) {
+  if (tab === 'a_traiter') return c.statut === 'nouvelle';
+  if (tab === 'envoyees') return alreadySent(c);
+  if (tab === 'a_renvoyer') return c.statut === 'preselectionnee' && !alreadySent(c);
+  return true;
+}
+
 export default function CandidaturesListPage() {
   const toast = useToast();
 
@@ -192,29 +207,26 @@ export default function CandidaturesListPage() {
   });
 
   const range = periodeRange(periode, du, au);
-  const filtersActive = niveaux.length > 0 || !!range || envoi !== 'all';
+  const filtersActive = niveaux.length > 0 || !!range;
 
   function resetFilters() {
     setNiveaux([]);
     setPeriode('all');
     setDu('');
     setAu('');
-    setEnvoi('all');
   }
 
   function toggleNiveau(n: string) {
     setNiveaux((list) => (list.includes(n) ? list.filter((x) => x !== n) : [...list, n]));
   }
 
-  const filteredCandidatures = candidatures.filter((c) => {
+  // Every filter except the status tab, so each tab can show how many candidatures it holds
+  const matchingCandidatures = candidatures.filter((c) => {
     const query = search.toLowerCase();
 
     if (poste && c.reference?.trim() !== poste) return false;
     if (niveaux.length > 0 && !niveaux.includes(c.niveau_etude || SANS_NIVEAU)) return false;
     if (range && !(c.disponible_du && c.disponible_du >= range[0] && c.disponible_du <= range[1])) return false;
-    if (envoi === 'a_traiter' && c.statut !== 'nouvelle') return false;
-    if (envoi === 'envoyees' && !alreadySent(c)) return false;
-    if (envoi === 'a_renvoyer' && !(c.statut === 'preselectionnee' && !alreadySent(c))) return false;
 
     return (
       c.nom.toLowerCase().includes(query) ||
@@ -222,6 +234,8 @@ export default function CandidaturesListPage() {
       c.reference?.toLowerCase().includes(query)
     );
   });
+
+  const filteredCandidatures = matchingCandidatures.filter((c) => matchesStatut(c, envoi));
 
   // ── Bulk send ──
   // "Select all" picks the visible candidatures the CRM has not received yet. Anything hidden by a
@@ -333,6 +347,46 @@ export default function CandidaturesListPage() {
         </div>
       )}
 
+      {/* Status tabs */}
+      {!loading && candidatures.length > 0 && (
+        <nav
+          aria-label="Statut des candidatures"
+          className="mb-6 flex gap-1 overflow-x-auto border-b border-[var(--line)] app-scroll"
+        >
+          {STATUT_TABS.map((tab) => {
+            const active = envoi === tab.value;
+            const count = matchingCandidatures.filter((c) => matchesStatut(c, tab.value)).length;
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                aria-current={active ? 'page' : undefined}
+                onClick={() => setEnvoi(tab.value)}
+                className={`relative -mb-px flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
+                  active ? '' : 'border-transparent text-[var(--ink-soft)] hover:text-[var(--ink)]'
+                }`}
+                style={active ? { borderColor: tab.color, color: tab.color } : undefined}
+              >
+                {tab.value !== 'all' && (
+                  <span aria-hidden className="h-2 w-2 rounded-full" style={{ background: tab.color }} />
+                )}
+                {tab.label}
+                <span
+                  className="rounded-full px-2 py-0.5 text-[11px] font-semibold font-mono-num"
+                  style={
+                    active
+                      ? { background: tab.color, color: '#fff' }
+                      : { background: 'var(--line)', color: 'var(--ink-soft)' }
+                  }
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
+
       {/* Filters */}
       {!loading && candidatures.length > 0 && (
         <div className="mb-6 space-y-4 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-5">
@@ -422,17 +476,6 @@ export default function CandidaturesListPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <select
-              value={envoi}
-              onChange={(e) => setEnvoi(e.target.value as EnvoiFiltre)}
-              aria-label="Filtrer par état d’envoi au CRM"
-              className="rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm outline-none focus:border-[var(--accent-secondary)]"
-            >
-              <option value="all">Toutes (état CRM)</option>
-              <option value="a_traiter">À traiter (pas encore acceptées)</option>
-              <option value="envoyees">Envoyées au CRM</option>
-              <option value="a_renvoyer">À renvoyer au CRM</option>
-            </select>
             {filtersActive && (
               <button
                 type="button"
@@ -502,7 +545,9 @@ export default function CandidaturesListPage() {
       ) : filteredCandidatures.length === 0 ? (
         <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] px-6 py-10 text-center">
           <p className="text-sm text-[var(--ink-soft)]">
-            Aucun candidat ne correspond à votre recherche.
+            {matchingCandidatures.length > 0
+              ? 'Aucune candidature dans cet onglet.'
+              : 'Aucun candidat ne correspond à votre recherche.'}
           </p>
         </div>
       ) : (

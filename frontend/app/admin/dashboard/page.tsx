@@ -102,7 +102,7 @@ export default function DashboardPage() {
               <span className="text-lg leading-none">+</span>Nouveau devis
             </Link>
             <Link
-              href="../devis/nouveau"
+              href="/admin/admin-rdv/nouveau"
               className="text-sm font-medium px-5 py-2.5 rounded-full border border-[var(--line)] hover:border-[var(--accent-secondary)] transition-colors"
             >
               + Rendez-vous

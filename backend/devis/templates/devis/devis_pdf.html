@@ -115,6 +115,7 @@
                     <div class="text">
                         {% if company.adresse %}{{ company.adresse }}<br>{% endif %}
                         {{ company.email }}
+                        {% if company.telephone %}<br>{{ company.telephone }}{% endif %}
                     </div>
                     <div class="text" style="margin-top:10px;">
                         Émis le {{ devis.date_validation|default:devis.date_creation|date:"d F Y" }}<br>
