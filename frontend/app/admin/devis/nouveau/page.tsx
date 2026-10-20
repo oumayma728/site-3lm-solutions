@@ -43,7 +43,7 @@ function StepBadge({ n }: { n: number }) {
   return (
     <span
       className="inline-flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-semibold text-white shrink-0"
-      style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
+      style={{ backgroundColor: 'var(--accent-primary)' }}
     >
       {n}
     </span>
@@ -94,7 +94,7 @@ function NouveauDevisForm() {
   };
 
   return (
-    <div className="px-8 py-10 max-w-3xl">
+    <div className="mx-auto w-full px-8 py-10 max-w-3xl">
       <Link
         href="/admin/devis"
         className="text-xs font-mono-num text-[var(--ink-soft)] hover:text-[var(--accent-primary)] transition-colors"
@@ -229,7 +229,7 @@ function NouveauDevisForm() {
             type="submit"
             disabled={loading || !clientId || !besoins.trim()}
             className="w-full text-white py-3.5 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-40 disabled:grayscale flex items-center justify-center gap-2 hover:shadow-lg hover:-translate-y-0.5"
-            style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
+            style={{ backgroundColor: 'var(--accent-primary)' }}
           >
             {loading ? (
               'Création en cours...'

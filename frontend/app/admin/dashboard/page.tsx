@@ -88,7 +88,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="px-8 py-10 max-w-6xl">
+    <div className="mx-auto w-full px-8 py-10 max-w-6xl">
       <PageHeader
         eyebrow="Espace équipe"
         title="Tableau de bord"
@@ -97,7 +97,7 @@ export default function DashboardPage() {
             <Link
               href="/admin/devis/nouveau"
               className="btn-press text-white px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-2 hover:shadow-lg hover:-translate-y-0.5"
-              style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
+              style={{ backgroundColor: 'var(--accent-primary)' }}
             >
               <span className="text-lg leading-none">+</span>Nouveau devis
             </Link>

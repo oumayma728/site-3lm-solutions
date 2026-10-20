@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createOffre, type OffreInput } from '@/lib/offres';
 import { useToast } from '@/components/ToastProvider';
+import { DEPARTEMENTS, modeleOffre, type ChampsOffre, type ProgrammeStage } from '@/lib/modelesOffres';
 
 function linesToList(value: string): string[] {
   return value
@@ -31,19 +32,45 @@ export default function OffreForm({ type }: { type: 'emploi' | 'stage' }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [titre, setTitre] = useState('');
-  const [programme, setProgramme] = useState<'ete' | 'pfe'>('ete');
-  const [departement, setDepartement] = useState('');
-  const [location, setLocation] = useState('');
-  const [contractType, setContractType] = useState(type === 'stage' ? 'Stage' : 'Temps plein');
-  const [experience, setExperience] = useState('');
-  const [description, setDescription] = useState('');
-  const [aboutRole, setAboutRole] = useState('');
-  const [responsibilities, setResponsibilities] = useState('');
-  const [qualifications, setQualifications] = useState('');
-  const [benefits, setBenefits] = useState('');
-  const [skills, setSkills] = useState('');
+  const [programme, setProgramme] = useState<ProgrammeStage>('pfe');
+  // Département choisi dans la liste, ou « autre » (saisie libre, sans modèle).
+  const [choixDepartement, setChoixDepartement] = useState('');
+  // Les champs démarrent avec la partie formelle du modèle (sans département).
+  const [champs, setChamps] = useState<ChampsOffre>(() => modeleOffre(type, 'pfe', null));
+  // Vrai dès qu'un champ est modifié à la main : le modèle ne l'écrase plus sans confirmation.
+  const [modifie, setModifie] = useState(false);
   const [actif, setActif] = useState(true);
+
+  const {
+    titre, departement, location, contractType, experience, description,
+    aboutRole, responsibilities, qualifications, benefits, skills,
+  } = champs;
+
+  const set = (cle: keyof ChampsOffre) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setChamps((c) => ({ ...c, [cle]: e.target.value }));
+    setModifie(true);
+  };
+
+  const appliquerModele = (prog: ProgrammeStage, dep: string) => {
+    if (modifie && !window.confirm('Remplacer vos modifications par le modèle ?')) return false;
+    setChamps(modeleOffre(type, prog, dep && dep !== 'autre' ? dep : null));
+    setModifie(false);
+    return true;
+  };
+
+  const changerProgramme = (p: ProgrammeStage) => {
+    if (p !== programme && appliquerModele(p, choixDepartement)) setProgramme(p);
+  };
+
+  const changerDepartement = (dep: string) => {
+    if (dep === 'autre') {
+      // Saisie libre : on garde le contenu actuel, seul le nom du département est à écrire.
+      setChoixDepartement('autre');
+      setChamps((c) => ({ ...c, departement: '' }));
+      return;
+    }
+    if (appliquerModele(programme, dep)) setChoixDepartement(dep);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,15 +108,10 @@ export default function OffreForm({ type }: { type: 'emploi' | 'stage' }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-8 max-w-3xl">
       <section className="space-y-5">
-        <Field label="Titre du poste">
-          <input
-            className={inputClass}
-            value={titre}
-            onChange={(e) => setTitre(e.target.value)}
-            required
-            placeholder={type === 'stage' ? 'Ex: Stage Développeur Full-Stack' : 'Ex: Ingénieur DevOps'}
-          />
-        </Field>
+        <p className="text-sm text-[var(--ink-soft)]">
+          Choisissez {type === 'stage' ? 'le programme et ' : ''}le département : le formulaire est pré-rempli avec
+          un modèle formel. Relisez et ajustez avant de publier.
+        </p>
 
         {type === 'stage' && (
           <Field label="Programme">
@@ -98,12 +120,12 @@ export default function OffreForm({ type }: { type: 'emploi' | 'stage' }) {
                 <button
                   key={p}
                   type="button"
-                  onClick={() => setProgramme(p)}
+                  onClick={() => changerProgramme(p)}
                   className="flex-1 text-sm font-medium px-4 py-2.5 rounded-lg border transition-all duration-200"
                   style={
                     programme === p
                       ? {
-                          backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
+                          backgroundColor: 'var(--accent-primary)',
                           color: '#fff',
                           borderColor: 'transparent',
                         }
@@ -117,38 +139,52 @@ export default function OffreForm({ type }: { type: 'emploi' | 'stage' }) {
           </Field>
         )}
 
-        <div className="grid grid-cols-2 gap-5">
-          <Field label="Département">
+        <Field label="Département">
+          <select
+            className={inputClass}
+            value={choixDepartement}
+            onChange={(e) => changerDepartement(e.target.value)}
+          >
+            <option value="" disabled>
+              Choisir un département
+            </option>
+            {DEPARTEMENTS.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+            <option value="autre">Autre…</option>
+          </select>
+          {choixDepartement === 'autre' && (
             <input
-              className={inputClass}
+              className={`${inputClass} mt-2`}
               value={departement}
-              onChange={(e) => setDepartement(e.target.value)}
-              placeholder="Ex: Data & IA"
+              onChange={set('departement')}
+              placeholder="Nom du département"
+              required
             />
-          </Field>
+          )}
+        </Field>
+
+        <Field label="Titre du poste">
+          <input
+            className={inputClass}
+            value={titre}
+            onChange={set('titre')}
+            required
+            placeholder={type === 'stage' ? 'Ex: Stage PFE — Développement Web' : 'Ex: Ingénieur DevOps'}
+          />
+        </Field>
+
+        <div className="grid grid-cols-2 gap-5">
           <Field label="Localisation">
-            <input
-              className={inputClass}
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Ex: Ariana, Tunisie"
-            />
+            <input className={inputClass} value={location} onChange={set('location')} placeholder="Ex: Ariana, Tunisie" />
           </Field>
           <Field label="Type de contrat">
-            <input
-              className={inputClass}
-              value={contractType}
-              onChange={(e) => setContractType(e.target.value)}
-              placeholder="Ex: Temps plein"
-            />
+            <input className={inputClass} value={contractType} onChange={set('contractType')} placeholder="Ex: Temps plein" />
           </Field>
           <Field label="Expérience">
-            <input
-              className={inputClass}
-              value={experience}
-              onChange={(e) => setExperience(e.target.value)}
-              placeholder="Ex: 2-3 ans"
-            />
+            <input className={inputClass} value={experience} onChange={set('experience')} placeholder="Ex: 2-3 ans" />
           </Field>
         </div>
 
@@ -157,7 +193,7 @@ export default function OffreForm({ type }: { type: 'emploi' | 'stage' }) {
             className={inputClass}
             rows={3}
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={set('description')}
             required
             placeholder="Résumé court affiché sur la liste des offres."
           />
@@ -174,7 +210,7 @@ export default function OffreForm({ type }: { type: 'emploi' | 'stage' }) {
             className={`${inputClass} resize-none`}
             rows={4}
             value={aboutRole}
-            onChange={(e) => setAboutRole(e.target.value)}
+            onChange={set('aboutRole')}
             placeholder={'Un paragraphe par ligne...'}
           />
         </Field>
@@ -184,7 +220,7 @@ export default function OffreForm({ type }: { type: 'emploi' | 'stage' }) {
             className={`${inputClass} resize-none`}
             rows={4}
             value={responsibilities}
-            onChange={(e) => setResponsibilities(e.target.value)}
+            onChange={set('responsibilities')}
             placeholder={'Une responsabilité par ligne...'}
           />
         </Field>
@@ -192,9 +228,9 @@ export default function OffreForm({ type }: { type: 'emploi' | 'stage' }) {
         <Field label="Qualifications requises">
           <textarea
             className={`${inputClass} resize-none`}
-            rows={4}
+            rows={5}
             value={qualifications}
-            onChange={(e) => setQualifications(e.target.value)}
+            onChange={set('qualifications')}
             placeholder={'Une qualification par ligne...'}
           />
         </Field>
@@ -204,7 +240,7 @@ export default function OffreForm({ type }: { type: 'emploi' | 'stage' }) {
             className={`${inputClass} resize-none`}
             rows={4}
             value={benefits}
-            onChange={(e) => setBenefits(e.target.value)}
+            onChange={set('benefits')}
             placeholder={'Un avantage par ligne...'}
           />
         </Field>
@@ -214,7 +250,7 @@ export default function OffreForm({ type }: { type: 'emploi' | 'stage' }) {
             className={`${inputClass} resize-none`}
             rows={3}
             value={skills}
-            onChange={(e) => setSkills(e.target.value)}
+            onChange={set('skills')}
             placeholder={'Une compétence par ligne (Ex: React)...'}
           />
         </Field>
@@ -233,13 +269,23 @@ export default function OffreForm({ type }: { type: 'emploi' | 'stage' }) {
         </label>
       </section>
 
+      {choixDepartement && modifie && (
+        <button
+          type="button"
+          onClick={() => appliquerModele(programme, choixDepartement)}
+          className="text-sm underline text-[var(--ink-soft)] hover:text-[var(--accent-primary)]"
+        >
+          Réinitialiser avec le modèle
+        </button>
+      )}
+
       {error && <p className="text-sm text-[var(--accent-brick)]">{error}</p>}
 
       <button
         type="submit"
         disabled={loading || !titre.trim() || !description.trim()}
         className="w-full text-white py-3.5 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-40 disabled:grayscale hover:shadow-lg hover:-translate-y-0.5"
-        style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
+        style={{ backgroundColor: 'var(--accent-primary)' }}
       >
         {loading ? 'Publication en cours...' : type === 'stage' ? 'Publier le stage' : 'Publier le poste'}
       </button>

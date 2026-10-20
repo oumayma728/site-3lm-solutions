@@ -120,7 +120,7 @@ function RendezVousDetailContent() {
 
   if (error || !rdv) {
     return (
-      <div className="px-8 py-10 max-w-2xl">
+      <div className="mx-auto w-full px-8 py-10 max-w-2xl">
         <p className="text-[var(--accent-brick)] text-sm mb-4">{error ?? 'Rendez-vous introuvable.'}</p>
         <Link href="/admin/admin-rdv" className="text-sm font-semibold underline underline-offset-4" style={{ color: 'var(--accent-secondary)' }}>
           Retour à la ligne directe
@@ -132,7 +132,7 @@ function RendezVousDetailContent() {
   const typeCfg = TYPE_RDV_CONFIG[rdv.type_rdv];
 
   return (
-    <div className="px-8 py-10 max-w-2xl">
+    <div className="mx-auto w-full px-8 py-10 max-w-2xl">
       <Link href="/admin/admin-rdv" className="text-xs font-mono-num text-[var(--ink-soft)] hover:text-[var(--accent-secondary)] transition-colors">
         ← retour à la ligne directe
       </Link>
@@ -227,7 +227,7 @@ function RendezVousDetailContent() {
             onClick={handleTerminer}
             disabled={actionLoading}
             className="rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
-            style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-secondary), var(--accent-primary))' }}
+            style={{ backgroundColor: 'var(--accent-primary)' }}
           >
             Marquer comme terminé
           </button>

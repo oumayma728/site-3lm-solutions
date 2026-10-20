@@ -60,7 +60,6 @@ export default function SiteNavbar() {
           <Link href="/">Accueil</Link>
           <Link href="/public/expertise" className={active('/public/expertise') ? 'active' : ''}>Services</Link>
           <Link href="/public/rendez-vous" className="nav-appointment">Prenez un rendez-vous</Link>
-          <Link href="/public/login" className="nav-team">Espace équipe</Link>
           <ThemeToggle className="theme-toggle-mobile" />
         </nav>
       )}

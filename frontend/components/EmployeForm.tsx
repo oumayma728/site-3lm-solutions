@@ -140,7 +140,7 @@ return (
             type="submit"
             disabled={loading || !nom.trim() || !prenom.trim() || !telephone.trim() || !email.trim() || !poste.trim() || !profil.trim() || !salaire.trim()}
             className="w-full text-white py-3.5 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-40 disabled:grayscale hover:shadow-lg hover:-translate-y-0.5"
-            style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
+            style={{ backgroundColor: 'var(--accent-primary)' }}
         >
             {loading ? 'Enregistrement...'  : 'Créer l\'employé'}
         </button>

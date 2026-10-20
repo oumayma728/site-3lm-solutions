@@ -14,7 +14,7 @@ function StepBadge({ n }: { n: number }) {
   return (
     <span
       className="inline-flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-semibold text-white shrink-0"
-      style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-secondary), var(--accent-primary))' }}
+      style={{ backgroundColor: 'var(--accent-primary)' }}
     >
       {n}
     </span>
@@ -87,7 +87,7 @@ function NouveauRendezVousForm() {
   };
 
   return (
-    <div className="px-8 py-10 max-w-3xl">
+    <div className="mx-auto w-full px-8 py-10 max-w-3xl">
       <Link
         href="/admin/admin-rdv"
         className="text-xs font-mono-num text-[var(--ink-soft)] hover:text-[var(--accent-secondary)] transition-colors"
@@ -192,7 +192,7 @@ function NouveauRendezVousForm() {
                   className="text-sm rounded-full border px-4 py-2 transition-all duration-200 flex items-center gap-1.5"
                   style={
                     active
-                      ? { backgroundImage: 'linear-gradient(135deg, var(--accent-secondary), var(--accent-primary))', color: '#fff', borderColor: 'transparent' }
+                      ? { backgroundColor: 'var(--accent-primary)', color: '#fff', borderColor: 'transparent' }
                       : { borderColor: 'var(--line)' }
                   }
                 >
@@ -227,7 +227,7 @@ function NouveauRendezVousForm() {
             type="submit"
             disabled={loading || !clientId || !dateRdv || !heureRdv}
             className="w-full text-white py-3.5 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-40 disabled:grayscale flex items-center justify-center gap-2 hover:shadow-lg hover:-translate-y-0.5"
-            style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-secondary), var(--accent-primary))' }}
+            style={{ backgroundColor: 'var(--accent-primary)' }}
           >
             {loading ? 'Création en cours...' : 'Proposer ce rendez-vous'}
           </button>

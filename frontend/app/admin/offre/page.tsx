@@ -55,7 +55,7 @@ export default function OffresListPage() {
   };
 
   return (
-    <div className="px-8 py-10 max-w-5xl">
+    <div className="mx-auto w-full px-8 py-10 max-w-5xl">
       <PageHeader
         eyebrow="Carrières & Stages"
         title="Offres"
@@ -64,7 +64,7 @@ export default function OffresListPage() {
             <Link
               href="/admin/offre/job"
               className="btn-press text-white px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-2 hover:shadow-lg hover:-translate-y-0.5"
-              style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))', boxShadow: 'var(--shadow-glow)' }}
+              style={{ backgroundColor: 'var(--accent-primary)', boxShadow: 'var(--shadow-glow)' }}
             >
               <span className="text-lg leading-none">+</span> Poste
             </Link>
@@ -91,7 +91,7 @@ export default function OffresListPage() {
                 style={
                   active
                     ? {
-                        backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
+                        backgroundColor: 'var(--accent-primary)',
                         color: '#fff',
                         borderColor: 'transparent',
                       }
@@ -118,7 +118,7 @@ export default function OffresListPage() {
             <Link
               href="/admin/offre/job"
               className="inline-flex items-center gap-2 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
-              style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
+              style={{ backgroundColor: 'var(--accent-primary)' }}
             >
               Créer un poste
             </Link>

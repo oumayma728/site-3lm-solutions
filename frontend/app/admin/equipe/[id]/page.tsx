@@ -77,7 +77,7 @@ export default function EmployeeDetailPage() {
   };
 
   return (
-    <div className="px-8 py-10 max-w-3xl">
+    <div className="mx-auto w-full px-8 py-10 max-w-3xl">
       <Link
         href="/admin/equipe"
         className="text-xs font-mono-num text-[var(--ink-soft)] hover:text-[var(--accent-primary)] transition-colors"
@@ -112,7 +112,7 @@ export default function EmployeeDetailPage() {
           <div className="flex items-center gap-4 mb-8 rounded-2xl bg-[var(--surface)] border border-[var(--line)] p-5">
             <div
               className="w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-semibold shrink-0"
-              style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
+              style={{ backgroundColor: 'var(--accent-primary)' }}
             >
               {initialsOf(employee)}
             </div>
@@ -189,7 +189,7 @@ export default function EmployeeDetailPage() {
                 onClick={handleSave}
                 disabled={saving}
                 className="w-full text-white py-3 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-40 hover:shadow-lg hover:-translate-y-0.5"
-                style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
+                style={{ backgroundColor: 'var(--accent-primary)' }}
               >
                 {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
               </button>

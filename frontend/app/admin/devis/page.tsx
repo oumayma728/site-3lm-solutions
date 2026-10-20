@@ -68,7 +68,7 @@ export default function DevisListPage() {
   }, [devisList]);
 
   return (
-    <div className="px-8 py-10 max-w-5xl">
+    <div className="mx-auto w-full px-8 py-10 max-w-5xl">
       <PageHeader
         eyebrow="Registre"
         title="Devis"
@@ -76,7 +76,7 @@ export default function DevisListPage() {
           <Link
             href="/admin/devis/nouveau"
             className="btn-press text-white px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-2 hover:shadow-lg hover:-translate-y-0.5"
-            style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))', boxShadow: 'var(--shadow-glow)' }}
+            style={{ backgroundColor: 'var(--accent-primary)', boxShadow: 'var(--shadow-glow)' }}
           >
             <span className="text-lg leading-none">+</span>
             Nouveau devis
@@ -134,7 +134,7 @@ export default function DevisListPage() {
                   style={
                     active
                       ? {
-                          backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
+                          backgroundColor: 'var(--accent-primary)',
                           color: '#fff',
                           borderColor: 'transparent',
                         }
@@ -159,7 +159,7 @@ export default function DevisListPage() {
         <div className="rounded-2xl border border-dashed border-[var(--line)] p-12 text-center bg-[var(--surface)]">
           <div
             className="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center text-white"
-            style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
+            style={{ backgroundColor: 'var(--accent-primary)' }}
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M12 5v14M5 12h14" />
@@ -169,7 +169,7 @@ export default function DevisListPage() {
           <Link
             href="/admin/devis/nouveau"
             className="inline-flex items-center gap-2 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
-            style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
+            style={{ backgroundColor: 'var(--accent-primary)' }}
           >
             Créer le premier devis
           </Link>

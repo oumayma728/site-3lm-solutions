@@ -235,7 +235,7 @@ export default function DevisPreview({
                 onClick={handleSaveCoutReel}
                 disabled={savingCoutReel || coutReelDraft.trim() === ''}
                 className="text-xs font-semibold rounded-lg px-3.5 py-2 text-white transition-opacity disabled:opacity-40"
-                style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
+                style={{ backgroundColor: 'var(--accent-primary)' }}
               >
                 {savingCoutReel ? '...' : 'Enregistrer'}
               </button>
@@ -501,7 +501,7 @@ export default function DevisPreview({
                 onClick={handleSave}
                 disabled={saving}
                 className="btn-press flex-1 text-sm font-semibold text-white rounded-lg py-2.5 transition-all duration-200 disabled:opacity-40"
-                style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
+                style={{ backgroundColor: 'var(--accent-primary)' }}
               >
                 {saving ? 'Enregistrement...' : 'Enregistrer'}
               </button>

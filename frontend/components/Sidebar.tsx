@@ -152,7 +152,7 @@ export default function Sidebar() {
           <Link
             href="/admin/devis/nouveau"
             className="btn-press flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-white px-3 py-2.5 rounded-lg transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
-            style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
+            style={{ backgroundColor: 'var(--accent-primary)' }}
           >
             <span className="text-sm leading-none">+</span> Devis
           </Link>
@@ -207,7 +207,7 @@ export default function Sidebar() {
         <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-[rgba(26,26,46,0.035)] transition-colors">
           <div
             className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold shrink-0"
-            style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
+            style={{ backgroundColor: 'var(--accent-primary)' }}
           >
             3L
           </div>

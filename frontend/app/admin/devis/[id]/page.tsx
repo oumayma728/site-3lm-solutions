@@ -221,7 +221,7 @@ export default function DevisDetailPage() {
 
   if (error || !devis) {
     return (
-      <div className="px-8 py-10 max-w-4xl">
+      <div className="mx-auto w-full px-8 py-10 max-w-4xl">
         <p className="text-[var(--accent-brick)] text-sm mb-4">{error ?? 'Devis introuvable.'}</p>
         <Link href="/admin/devis" className="text-sm font-semibold underline underline-offset-4" style={{ color: 'var(--accent-secondary)' }}>
           Retour au registre

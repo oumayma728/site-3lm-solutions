@@ -75,7 +75,7 @@ function RendezVousRow({ rdv, busy, index = 0, onConfirmer, onAnnuler, onTermine
             onClick={() => onTerminer(rdv.id)}
             disabled={busy}
             className="text-xs font-semibold rounded-full px-3.5 py-1.5 text-white transition-opacity disabled:opacity-40"
-            style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-secondary), var(--accent-primary))' }}
+            style={{ backgroundColor: 'var(--accent-primary)' }}
           >
             Terminer
           </button>
@@ -235,7 +235,7 @@ export default function RendezVousListPage() {
   const rowActions = { onConfirmer: handleConfirmer, onAnnuler: handleAnnuler, onTerminer: handleTerminer, onDelete: handleDelete };
 
   return (
-    <div className="px-8 py-10 max-w-5xl">
+    <div className="mx-auto w-full px-8 py-10 max-w-5xl">
       <PageHeader
         eyebrow="Ligne directe"
         title="Rendez-vous"
@@ -252,7 +252,7 @@ export default function RendezVousListPage() {
             <Link
               href="/admin/admin-rdv/nouveau"
               className="btn-press text-white px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-2 hover:shadow-lg hover:-translate-y-0.5"
-              style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-secondary), var(--accent-primary))' }}
+              style={{ backgroundColor: 'var(--accent-primary)' }}
             >
               <span className="text-lg leading-none">+</span>
               Proposer un rendez-vous
@@ -305,7 +305,7 @@ export default function RendezVousListPage() {
                   className="text-xs uppercase tracking-wider font-mono-num px-3 py-2 rounded-full border transition-all duration-200"
                   style={
                     active
-                      ? { backgroundImage: 'linear-gradient(135deg, var(--accent-secondary), var(--accent-primary))', color: '#fff', borderColor: 'transparent' }
+                      ? { backgroundColor: 'var(--accent-primary)', color: '#fff', borderColor: 'transparent' }
                       : { borderColor: 'var(--line)' }
                   }
                 >
@@ -327,7 +327,7 @@ export default function RendezVousListPage() {
         <div className="rounded-2xl border border-dashed border-[var(--line)] p-12 text-center bg-[var(--surface)]">
           <div
             className="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center text-white"
-            style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-secondary), var(--accent-primary))' }}
+            style={{ backgroundColor: 'var(--accent-primary)' }}
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M8 2v4M16 2v4M3 10h18M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" />
@@ -337,7 +337,7 @@ export default function RendezVousListPage() {
           <Link
             href="/admin/admin-rdv/nouveau"
             className="inline-flex items-center gap-2 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
-            style={{ backgroundImage: 'linear-gradient(135deg, var(--accent-secondary), var(--accent-primary))' }}
+            style={{ backgroundColor: 'var(--accent-primary)' }}
           >
             Proposer le premier rendez-vous
           </Link>
