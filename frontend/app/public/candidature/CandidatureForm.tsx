@@ -109,8 +109,12 @@ export default function CandidatureForm() {
       setSuccess(true);
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 429) {
-        // Rate limit (see DEFAULT_THROTTLE_RATES['candidature'] in backend settings)
-        setError('Trop de candidatures envoyées. Réessayez dans une heure.');
+        // Rate limits: per IP (DEFAULT_THROTTLE_RATES['candidature']) or per offer (CANDIDATURES_PAR_OFFRE_MAX).
+        // The server's message says which one applies.
+        const detail = (err.response.data as { detail?: string } | undefined)?.detail;
+        setError(detail && !detail.startsWith('Request was throttled')
+          ? detail
+          : 'Trop de candidatures envoyées. Réessayez dans une heure.');
       } else if (axios.isAxiosError(err) && err.response?.data) {
         const data = err.response.data;
         const msg = typeof data === 'object' ? Object.values(data).flat().join(' ') : String(data);

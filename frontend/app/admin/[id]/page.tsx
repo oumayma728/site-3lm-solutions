@@ -99,7 +99,7 @@ export default function ClientHistoriquePage() {
 
   if (loading) {
     return (
-      <div className="mx-auto w-full px-8 py-10 max-w-5xl">
+      <div className="mx-auto w-full px-8 py-10 max-w-7xl">
         <div className="animate-pulse space-y-4">
           <div className="h-4 w-32 rounded bg-[var(--line)]" />
           <div className="h-10 w-64 rounded bg-[var(--line)]" />
@@ -123,7 +123,7 @@ export default function ClientHistoriquePage() {
   const statutCfg = STATUT_CLIENT_CONFIG[client.statut ?? 'nouveau'];
 
   return (
-    <div className="mx-auto w-full px-8 py-10 max-w-5xl">
+    <div className="mx-auto w-full px-8 py-10 max-w-7xl">
       <Link href="/admin/prospects" className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--accent-secondary)' }}>
         ← Prospects
       </Link>

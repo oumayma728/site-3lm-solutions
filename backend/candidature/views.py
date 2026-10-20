@@ -14,7 +14,15 @@ from django.core.mail import EmailMessage
 from django.http import FileResponse, Http404
 from django.conf import settings
 from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.exceptions import Throttled
+from django.core.cache import cache
+import logging
 import os
+import time
+
+logger = logging.getLogger(__name__)
+
+FENETRE_PAR_OFFRE = 24 * 3600  # seconds
 
 
 class CandidatureViewSet(viewsets.ModelViewSet):
@@ -27,6 +35,28 @@ class CandidatureViewSet(viewsets.ModelViewSet):
         if self.action == 'create':
             return [ScopedRateThrottle()]
         return []
+
+    def _cle_par_offre(self, request):
+        # Same client IP logic as the DRF throttles (honours NUM_PROXIES behind the host's proxy)
+        ip = ScopedRateThrottle().get_ident(request)
+        offre = str(request.data.get('offre') or 'spontanee')[:20]
+        return f'candidature_offre:{offre}:{ip}'
+
+    def create(self, request, *args, **kwargs):
+        """Per-offer limit. Only SUCCESSFUL applications count, so a candidate who fixes a form
+        error is never locked out. Stored as (count, window end): cache.incr() would reset the timeout."""
+        cle = self._cle_par_offre(request)
+        now = time.time()
+        count, fin = cache.get(cle) or (0, now + FENETRE_PAR_OFFRE)
+        if count >= settings.CANDIDATURES_PAR_OFFRE_MAX:
+            raise Throttled(
+                wait=max(1, int(fin - now)),
+                detail="Vous avez déjà postulé à cette offre récemment. Vous pourrez réessayer dans 24 heures.",
+            )
+        response = super().create(request, *args, **kwargs)
+        cache.set(cle, (count + 1, fin), timeout=max(1, int(fin - now)))
+        return response
+
     def perform_create(self, serializer):
         candidature = serializer.save()
 
@@ -53,7 +83,12 @@ class CandidatureViewSet(viewsets.ModelViewSet):
             email.attach(
                 candidature.cv_nom_original or os.path.basename(candidature.cv.name),
                 candidature.cv.read()            )
-        email.send()
+        # The application is already saved: a mail server problem must not turn it into an error
+        # for the candidate (a retry would then be refused as "already applied"). It stays in the admin.
+        try:
+            email.send()
+        except Exception:
+            logger.exception("Notification e-mail failed for candidature %s", candidature.pk)
 
     @action(detail=True, methods=['get'])
     def cv(self, request, pk=None):

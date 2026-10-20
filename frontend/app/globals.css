@@ -10,6 +10,7 @@
   --accent-primary:#4F46E5;        /* indigo : actions principales */
   --accent-secondary:#4338CA;      /* indigo foncé : liens, état actif */
   --accent-secondary-dark:#3730A3;
+  --accent-primary-hover:#4338CA;
   --accent-sage:#059669;           /* validé */
   --accent-brick:#DC2626;          /* erreur */
   --accent-amber:#D97706;          /* en attente */

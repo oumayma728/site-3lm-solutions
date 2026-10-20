@@ -301,7 +301,7 @@ export default function CandidaturesListPage() {
   }
 
   return (
-    <div className="mx-auto w-full px-8 py-10 max-w-6xl">
+    <div className="mx-auto w-full px-8 py-10 max-w-7xl">
       <PageHeader
         eyebrow="Recrutement"
         title="Candidatures"

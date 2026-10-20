@@ -191,6 +191,11 @@ EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'true').lower() == 'true'
 CRM_API_URL = os.getenv('CRM_API_URL', '')
 CRM_API_KEY = os.getenv('CRM_API_KEY', '')
 
+# Max successful applications to ONE offer from the same IP within 24h (on top of the
+# 'candidature' throttle below). Stops one person flooding an offer by changing the email.
+# Two allows a household / school network to share an IP.
+CANDIDATURES_PAR_OFFRE_MAX = int(os.getenv('CANDIDATURES_PAR_OFFRE_MAX', '2'))
+
 
 
 REST_FRAMEWORK = {

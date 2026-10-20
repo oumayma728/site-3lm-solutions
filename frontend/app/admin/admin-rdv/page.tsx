@@ -235,7 +235,7 @@ export default function RendezVousListPage() {
   const rowActions = { onConfirmer: handleConfirmer, onAnnuler: handleAnnuler, onTerminer: handleTerminer, onDelete: handleDelete };
 
   return (
-    <div className="mx-auto w-full px-8 py-10 max-w-5xl">
+    <div className="mx-auto w-full px-8 py-10 max-w-7xl">
       <PageHeader
         eyebrow="Ligne directe"
         title="Rendez-vous"

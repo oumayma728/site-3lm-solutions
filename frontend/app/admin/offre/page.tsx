@@ -55,7 +55,7 @@ export default function OffresListPage() {
   };
 
   return (
-    <div className="mx-auto w-full px-8 py-10 max-w-5xl">
+    <div className="mx-auto w-full px-8 py-10 max-w-7xl">
       <PageHeader
         eyebrow="Carrières & Stages"
         title="Offres"
