@@ -21,4 +21,7 @@ RUN SECRET_KEY=collectstatic-only python manage.py collectstatic --noinput
 
 EXPOSE 8000
 # The host gives the port in $PORT. WEB_CONCURRENCY = number of worker processes.
-CMD ["sh", "-c", "exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-3} --timeout 60 --access-logfile -"]
+# predeploy.sh (migrations + cache table) also runs here, so the database is always ready even when
+# the host skips railway.toml's preDeployCommand. Both steps are idempotent; if one fails, the
+# container does not start and the previous deploy keeps serving.
+CMD ["sh", "-c", "sh predeploy.sh && exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-3} --timeout 60 --access-logfile -"]

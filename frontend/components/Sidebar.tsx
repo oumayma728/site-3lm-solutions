@@ -2,9 +2,10 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import type { CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import Logo from './Logo';
 import { clearToken } from '@/lib/auth';
+import { getMoi, type Moi } from '@/lib/comptes';
 
 const navGroups = [
   {
@@ -90,6 +91,17 @@ const navGroups = [
           </svg>
         ),
       },
+      {
+        href: '/admin/comptes',
+        label: 'Accès & comptes',
+        adminOnly: true, // shown to administrators (superusers) only
+        match: (p: string) => p === '/admin/comptes',
+        icon: (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4zM9 12l2 2 4-4" />
+          </svg>
+        ),
+      },
     ],
   },
   {
@@ -112,6 +124,14 @@ const navGroups = [
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [moi, setMoi] = useState<Moi | null>(null);
+
+  useEffect(() => {
+    getMoi().then(setMoi).catch(() => setMoi(null));
+  }, []);
+
+  const nomAffiche = moi ? [moi.first_name, moi.last_name].filter(Boolean).join(' ') || moi.username : 'Équipe 3LM';
+  const initiales = nomAffiche.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
 
   const handleLogout = () => {
     clearToken();
@@ -171,7 +191,7 @@ export default function Sidebar() {
                 {group.label}
               </p>
               <div className="space-y-1">
-                {group.items.map((item) => {
+                {group.items.filter((item) => !('adminOnly' in item) || moi?.is_superuser).map((item) => {
                   const active = item.match(pathname);
                   return (
                     <Link
@@ -209,10 +229,13 @@ export default function Sidebar() {
             className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold shrink-0"
             style={{ backgroundColor: 'var(--accent-primary)' }}
           >
-            3L
+            {moi ? initiales : '3L'}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold truncate">Équipe 3LM</p>
+            <p className="text-xs font-semibold truncate">
+              {nomAffiche}
+              {moi?.is_superuser && <span className="ml-1 font-normal text-[var(--ink-soft)]">· Admin</span>}
+            </p>
             <div className="flex items-center gap-1.5">
               <span className="relative flex w-1.5 h-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style={{ backgroundColor: 'var(--accent-sage)' }} />
