@@ -90,8 +90,11 @@ export default function ChatWidget() {
 
   return (
     <>
+      {/* Phone only (see CSS): dims the page behind the chat sheet, tap to close */}
+      {isOpen && <div className="chat-backdrop" onClick={toggleChat} aria-hidden="true" />}
+
       <button
-        className="chat-toggle-button"
+        className={`chat-toggle-button${isOpen ? ' is-open' : ''}`}
         onClick={toggleChat}
         aria-label={isOpen ? 'Fermer le chat' : 'Ouvrir le chat'}
       >

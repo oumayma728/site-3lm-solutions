@@ -15,4 +15,16 @@
 .social:hover{border-color:var(--a2);color:var(--a2)}
 .footer-bottom{border-top:1px solid var(--line);padding-top:18px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:11px}
 @media(max-width:900px){.footer-grid{grid-template-columns:1fr 1fr;gap:30px}}
-@media(max-width:580px){.footer-grid{grid-template-columns:1fr}.footer-bottom{flex-direction:column}}
+/* Phone: Services and Liens side by side (the footer was one ~1000px column), bigger tap areas */
+@media(max-width:580px){
+  #footer{padding:44px 20px calc(20px + env(safe-area-inset-bottom))}
+  .footer-grid{grid-template-columns:1fr 1fr;gap:28px 20px;margin-bottom:28px}
+  .footer-brand,.footer-grid>.footer-col:last-child{grid-column:1/-1}
+  .footer-brand p{max-width:none}
+  .footer-col li{margin-bottom:0}
+  .footer-col a{display:inline-block;padding:7px 0;font-size:13.5px}
+  .footer-contact-item{font-size:13.5px;padding:5px 0;margin-bottom:0}
+  .footer-contact-item a{font-size:13.5px}
+  .social{width:40px;height:40px;font-size:13px}
+  .footer-bottom{flex-direction:column;gap:4px;padding-bottom:64px} /* room for the floating chat button */
+}

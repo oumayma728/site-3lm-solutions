@@ -50,6 +50,7 @@ export default function SiteNavbar() {
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-label={open ? 'Fermer le menu' : 'Ouvrir le menu'}
+          aria-expanded={open}
         >
           {open ? '×' : '☰'}
         </button>
@@ -57,8 +58,11 @@ export default function SiteNavbar() {
 
       {open && (
         <nav className="mobile-nav" aria-label="Navigation mobile">
-          <Link href="/">Accueil</Link>
+          {/* Same links as the desktop menu, in the same order */}
+          <Link href="/" className={active('/') ? 'active' : ''}>Accueil</Link>
           <Link href="/public/expertise" className={active('/public/expertise') ? 'active' : ''}>Services</Link>
+          <Link href="/public/nearshore" className={`nav-nearshore ${active('/public/nearshore') ? 'active' : ''}`}>Nearshore</Link>
+          <Link href="/public/stages" className={`nav-internship ${pathname.startsWith('/public/stages') ? 'active' : ''}`}>Stages 2026</Link>
           <Link href="/public/rendez-vous" className="nav-appointment">Prenez un rendez-vous</Link>
           <ThemeToggle className="theme-toggle-mobile" />
         </nav>
