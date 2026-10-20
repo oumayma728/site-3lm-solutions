@@ -227,4 +227,6 @@ LOGGING = {
     'disable_existing_loggers': False,
     'handlers': {'console': {'class': 'logging.StreamHandler'}},
     'root': {'handlers': ['console'], 'level': os.getenv('LOG_LEVEL', 'INFO')},
+    # WeasyPrint détaille chaque étape du rendu PDF en INFO : seulement ses avertissements.
+    'loggers': {'weasyprint': {'level': 'WARNING'}, 'fontTools': {'level': 'WARNING'}},
 }

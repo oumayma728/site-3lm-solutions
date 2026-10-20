@@ -22,7 +22,7 @@ export default function ExpertisePage() {
         <section className="expertise-hero">
           <span className="hero-badge"><span className="dot" />Expertise</span>
           <h1>Huit domaines, <span className="gradient-text">une seule équipe</span>.</h1>
-          <p>Cliquez sur un domaine pour découvrir ce que nous livrons concrètement.</p>
+          <p>Du développement logiciel à l’intelligence artificielle, nous concevons des solutions adaptées à vos enjeux métier. Explorez nos expertises et découvrez comment nous pouvons concrètement vous aider.</p>
         </section>
 
         <section className="expertise-grid-section">

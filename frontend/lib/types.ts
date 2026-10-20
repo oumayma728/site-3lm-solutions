@@ -22,12 +22,32 @@ export interface LigneDevis {
   prix_unitaire: number | string;
   total?: number;
   // Champs d'estimation — remplis par l'IA ou modifiables manuellement.
-  // prix_unitaire reste éditable : ces champs servent de base au calcul,
-  // pas une valeur verrouillée.
+  // Quand ils sont tous renseignés (mode 'estimation_ia'), le backend
+  // recalcule prix_unitaire : la valeur saisie est alors ignorée.
   profil?: Profil | '';
-  jours_estimes?: number | string;
+  jours_par_personne?: number | string;
   nombre_personnes?: number;
   complexite?: Complexite | '';
+  // Instantané du calcul (lecture seule, fourni par le backend).
+  tjm?: number | string | null;
+  multiplicateur?: number | string | null;
+  jours_personne?: number | string | null;
+  prix?: number | string | null;
+}
+
+// Ligne d'un brouillon dont le TJM ou le multiplicateur a changé depuis son chiffrage.
+export interface TarifModifie {
+  ligne: number;
+  description: string;
+  tjm_au_chiffrage: number | string;
+  tjm_actuel: number | string | null;
+  multiplicateur_au_chiffrage: number | string;
+  multiplicateur_actuel: number | string | null;
+}
+
+export interface BudgetMentionne {
+  montant: number;
+  devise: 'TND' | 'EUR' | 'USD';
 }
 
 export type Devise = 'TND' | 'EUR' | 'USD';
@@ -42,10 +62,23 @@ export type ModeTarification = 'estimation_ia' | 'cout_reel';
 
 export interface Devis {
   id: number;
+  numero?: string | null;
+  version?: number;
   client: number;
   client_nom?: string;
+  client_email?: string;
   besoins_client: string;
   synthese_ia?: string;
+  // Analyse IA : à relire avant les lignes. budget_mentionne est affiché seulement,
+  // il n'intervient jamais dans le prix.
+  hypotheses?: string[];
+  questions_ouvertes?: string[];
+  budget_mentionne?: BudgetMentionne | null;
+  ia_modele?: string;
+  tarifs_modifies?: TarifModifie[];
+  date_validation?: string | null;
+  date_validite?: string | null;
+  // Toujours calculé par le backend (somme des lignes, ou coût réel + marge).
   estimation_montant?: number | string | null;
   // Devise d'affichage — les montants restent stockés en TND, voir lib/devis.ts convertirMontant.
   devise?: Devise;

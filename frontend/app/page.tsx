@@ -4,11 +4,11 @@ import SiteFooter from '@/components/site/SiteFooter';
 import '@/components/site/tokens.css';
 import '@/components/site/Home.css';
 
-const stats = [
-  ['30+', 'Clients accompagnés', <svg key="i1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" /></svg>],
-  ['85+', 'Projets logiciels livrés', <svg key="i2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M9 12h6M9 16h6M9 8h6M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" /></svg>],
-  ['7+', 'Pays desservis', <svg key="i3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.6 3.8 5.8 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.8-3.8-9s1.3-6.4 3.8-9z" /></svg>],
-] as const;
+// const stats = [
+//   ['30+', 'Clients accompagnés', <svg key="i1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" /></svg>],
+//   ['85+', 'Projets logiciels livrés', <svg key="i2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M9 12h6M9 16h6M9 8h6M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" /></svg>],
+//   ['7+', 'Pays desservis', <svg key="i3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.6 3.8 5.8 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.8-3.8-9s1.3-6.4 3.8-9z" /></svg>],
+// ] as const;
 
 const expertiseTeaser = [
   'Intelligence Artificielle', 'Data & Analytics', 'DevOps & Cloud',
@@ -38,7 +38,7 @@ export default function Home() {
           </div>
         </section>
 
-        <div className="stats-strip">
+        {/* <div className="stats-strip">
           <div className="stats-strip-inner">
             {stats.map(([num, label, icon]) => (
               <div className="stat-item" key={label}>
@@ -50,7 +50,7 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </div>
+        </div> */}
 
         {/* <div className="tech-strip">
           <span>Technologies que nous maîtrisons au quotidien</span>
@@ -67,10 +67,10 @@ export default function Home() {
               <p>Nous relions vision business, expérience utilisateur et exécution technique pour livrer des solutions utiles dès le premier jour.</p>
             </div>
             <div className="why-list">
-              <article><b>01</b><div><h3>Conseil pragmatique</h3><p>Des recommandations adaptées à vos priorités, vos contraintes et votre budget.</p></div></article>
-              <article><b>02</b><div><h3>Solutions sécurisées</h3><p>Une attention constante à la fiabilité, la confidentialité et la maintenance.</p></div></article>
-              <article><b>03</b><div><h3>Exécution agile</h3><p>Des cycles courts, des livrables visibles et une communication transparente.</p></div></article>
-              <article><b>04</b><div><h3>Accompagnement complet</h3><p>De l&rsquo;idée initiale au déploiement, puis au support et à l&rsquo;évolution.</p></div></article>
+              <article><b>01</b><div><h3>Conseil pragmatique</h3><p>des choix techniques adaptés à vos objectifs et à votre budget.</p></div></article>
+              <article><b>02</b><div><h3>Fiabilité et sécurité</h3><p>des solutions conçues pour protéger vos données et faciliter la maintenance.</p></div></article>
+              <article><b>03</b><div><h3>Avancement visible</h3><p>des livrables réguliers et des priorités définies ensemble.</p></div></article>
+              <article><b>04</b><div><h3>Suivi dans la durée</h3><p>de la conception à la mise en production et aux évolutions.</p></div></article>
             </div>
           </div>
         </section>
@@ -79,8 +79,8 @@ export default function Home() {
           <div className="about-copy">
             <div className="section-marker"><span />À propos</div>
             <h2>Un partenaire technologique pour vos projets essentiels.</h2>
-            <p>Chez 3LM Solutions, nous concevons des outils numériques sur mesure pour aider les entreprises à gagner en performance, automatiser leurs opérations et mieux exploiter leurs données.</p>
-            <p>Notre équipe combine savoir-faire technique, sens du service et recherche de résultats mesurables — des solutions modernes, prêtes à accompagner votre croissance.</p>
+            <p>Chez 3LM Solutions, nous concevons et développons des solutions numériques sur mesure pour répondre aux enjeux concrets des entreprises : digitaliser leurs processus, automatiser leurs opérations et tirer le meilleur parti de leurs données.</p>
+            <p>De la conception au déploiement, nous associons expertise technique et compréhension de vos besoins métier pour créer des solutions fiables, évolutives et adaptées à vos objectifs.</p>
           </div>
         </section>
 
@@ -105,8 +105,8 @@ export default function Home() {
             </div>
             <div className="ns-spotlight-copy">
               <div className="section-marker"><span />Nearshore</div>
-              <h2>Une équipe tech basée en Tunisie, <span className="gradient-text">à une heure de vous</span>.</h2>
-              <p>Même fuseau horaire, équipe francophone, coûts maîtrisés — découvrez comment nous devenons l&rsquo;extension naturelle de votre équipe.</p>
+              <h2>Votre équipe tech nearshore, basée en Tunisie.</h2>
+              <p>Renforcez vos équipes avec des talents tech francophones, un fuseau horaire aligné sur l’Europe et des coûts maîtrisés. Une collaboration fluide, au plus près de vos projets.</p>
               <div className="ns-spotlight-facts">
                 <span><strong>GMT+1</strong>Fuseau aligné</span>
                 <span><strong>FR</strong>Équipe francophone</span>

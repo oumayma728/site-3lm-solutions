@@ -1,10 +1,13 @@
-from decimal import Decimal
+from datetime import timedelta
+from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
 from django.template.loader import render_to_string
 from django.conf import settings
+from django.utils import timezone
 from weasyprint import HTML
 
+from ..models import VALIDITE_DEVIS_JOURS
 from .currency import convertir, SYMBOLES
 
 # TVA tunisienne (19%) : ne s'applique qu'aux devis facturés en TND — une
@@ -14,7 +17,7 @@ from .currency import convertir, SYMBOLES
 # TVA est ajoutée par-dessus seulement au moment de générer le PDF.
 TAUX_TVA = Decimal('0.19')
 
-LOGO_PATH = Path(settings.BASE_DIR) / 'devis' / 'static' / 'devis' / 'logo_3lm.png'
+LOGO_PATH = Path(settings.BASE_DIR) / 'devis' / 'static' / 'devis' / '3LM_logo.png'
 SIGNATURE_PATH = Path(settings.BASE_DIR) / 'devis' / 'static' / 'devis' / 'signature.jpeg'
 CACHET_PATH = Path(settings.BASE_DIR) / 'devis' / 'static' / 'devis' / 'cachet.jpeg'
 
@@ -47,20 +50,26 @@ def generer_pdf_devis(devis) -> bytes:
     devise = devis.devise
     symbole = SYMBOLES.get(devise, 'DT')
 
-    # On pré-calcule une liste de lignes "prêtes à afficher" (montants déjà
-    # convertis) plutôt que de faire la conversion dans le template Django,
-    # qui n'a pas accès à des fonctions Python arbitraires comme convertir().
+    # Le client ne voit que la description et le prix de chaque ligne : jamais
+    # le TJM, les jours ni les multiplicateurs (barème interne). En mode
+    # 'cout_reel', les lignes décrivent le périmètre, sans prix individuel.
+    avec_prix_par_ligne = devis.mode_tarification != 'cout_reel'
     lignes_affichage = [
         {
             'description': ligne.description,
             'prestation': ligne.prestation,
-            'quantite': ligne.quantite,
-            'prix_unitaire': convertir(ligne.prix_unitaire, devise),
-            'total': convertir(ligne.total, devise),
+            'prix': convertir(ligne.total, devise) if avec_prix_par_ligne else None,
         }
         for ligne in devis.lignes.all()
     ]
-    estimation_affichage = convertir(devis.estimation_montant, devise) if devis.estimation_montant is not None else None
+    if devis.estimation_montant is None:
+        estimation_affichage = None
+    elif avec_prix_par_ligne:
+        # Somme des lignes DÉJÀ converties : en EUR/USD, le sous-total est
+        # exactement la somme de ce que le client lit sur chaque ligne.
+        estimation_affichage = sum((l['prix'] for l in lignes_affichage), Decimal('0'))
+    else:
+        estimation_affichage = convertir(devis.estimation_montant, devise)
 
     # TVA 19% uniquement en TND (voir commentaire sur TAUX_TVA ci-dessus) —
     # calculée sur le montant déjà converti (estimation_affichage), pas sur
@@ -69,11 +78,18 @@ def generer_pdf_devis(devis) -> bytes:
     tva_montant = None
     total_ttc = estimation_affichage
     if estimation_affichage is not None:
-        tva_montant = (estimation_affichage * tva_taux).quantize(Decimal('0.01'))
+        tva_montant = (estimation_affichage * tva_taux).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         total_ttc = estimation_affichage + tva_montant
+
+    # Brouillon : aperçu avant envoi, avec la date de validité qu'il aurait s'il était validé aujourd'hui.
+    apercu = not devis.est_fige
+    date_validite = devis.date_validite or (timezone.localdate() + timedelta(days=VALIDITE_DEVIS_JOURS))
 
     html = render_to_string('devis/devis_pdf.html', {
         'devis': devis,
+        'apercu': apercu,
+        'date_validite': date_validite,
+        'avec_prix_par_ligne': avec_prix_par_ligne,
         'lignes_affichage': lignes_affichage,
         'estimation_affichage': estimation_affichage,
         'tva_taux_pourcent': int(tva_taux * 100),  # ex: 19, pas 0.19 — pour l'affichage "TVA (19%)"

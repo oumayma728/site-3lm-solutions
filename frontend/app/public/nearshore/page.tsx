@@ -25,8 +25,7 @@ export default function NearshorePage() {
               <span className="gradient-text">À une heure de vous.</span>
             </h1>
             <p>
-              3LM Solutions accompagne des entreprises européennes avec une équipe technique
-              basée à Ariana, Tunisie — sur vos horaires, dans votre langue.
+              3LM Solutions accompagne les entreprises européennes avec une équipe technique basée à Ariana, en Tunisie. Une collaboration de proximité, une communication fluide et des horaires de travail adaptés à vos besoins.
             </p>
             <div className="home-actions">
               <Link href="/public/rendez-vous" className="gradient-button">Discuter de mon projet →</Link>
@@ -99,19 +98,19 @@ export default function NearshorePage() {
             <div className="compare-card muted">
               <h3>Équipe interne en Europe</h3>
               <ul className="compare-list">
-                <li><Cross />Recrutement long et incertain (souvent 2 à 3 mois)</li>
-                <li><Cross />Charges sociales et coûts fixes élevés</li>
-                <li><Cross />Risque de turnover et perte de savoir</li>
-                <li><Cross />Montée en charge lente sur un nouveau besoin</li>
+                <li><Cross />Un processus de recrutement qui peut prendre plusieurs semaines</li>
+                <li><Cross />Des coûts salariaux et des charges associés à l’embauche</li>
+                <li><Cross />Du temps consacré à l’intégration et à la montée en compétences</li>
+                <li><Cross />Une capacité d’évolution liée aux ressources internes disponibles</li>
               </ul>
             </div>
             <div className="compare-card highlight">
               <h3>Équipe 3LM Nearshore</h3>
               <ul className="compare-list">
-                <li><Check />Équipe opérationnelle en quelques semaines</li>
-                <li><Check />Coût maîtrisé, sans charges cachées</li>
-                <li><Check />Continuité et stabilité de l&rsquo;équipe projet</li>
-                <li><Check />Scalable à la hausse comme à la baisse selon vos besoins</li>
+                <li><Check />Un démarrage organisé selon le périmètre et les besoins du projet</li>
+                <li><Check />Un budget défini selon le modèle de collaboration retenu</li>
+                <li><Check />Un suivi structuré et une documentation du projet</li>
+                <li><Check />Des ressources ajustables selon l’évolution de vos besoins</li>
               </ul>
             </div>
           </div>

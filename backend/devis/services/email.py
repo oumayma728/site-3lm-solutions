@@ -14,12 +14,14 @@ def envoyer_devis_par_email(devis):
     """Génère le PDF du devis et l'envoie par email au client."""
     pdf_bytes = generer_pdf_devis(devis)
 
-    sujet = f"Votre devis #{devis.id} - {devis.client.entreprise or devis.client.nom}"
+    numero = devis.numero or devis.id
+    validite = f"jusqu'au {devis.date_validite:%d/%m/%Y}" if devis.date_validite else "30 jours à compter de sa date d'émission"
+    sujet = f"Votre devis {numero} - {devis.client.entreprise or devis.client.nom}"
     corps = f"""Bonjour {devis.client.prenom or devis.client.nom},
 
 Veuillez trouver ci-joint votre devis détaillé suite à notre échange.
 
-Ce devis est valable 30 jours à compter de sa date d'émission.
+Ce devis est valable {validite}.
 N'hésitez pas à nous contacter pour toute question.
 
 Cordialement,
@@ -31,7 +33,7 @@ L'équipe commerciale"""
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=[devis.client.email],
     )
-    email.attach(f"devis_{devis.id}.pdf", pdf_bytes, "application/pdf")
+    email.attach(f"devis_{numero}.pdf", pdf_bytes, "application/pdf")
     email.send(fail_silently=False)
 
 

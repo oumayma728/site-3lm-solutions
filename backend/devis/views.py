@@ -1,18 +1,20 @@
-from decimal import Decimal
+from datetime import timedelta
 
-from django.db import models
+from django.db import models, transaction
+from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django.http import HttpResponse
-from .models import Client, Devis, LigneDevis, Prestation, RendezVous
+from .models import VALIDITE_DEVIS_JOURS, Client, Devis, Prestation, RendezVous
 from .serializers import (
-    ClientSerializer, DevisSerializer, LigneDevisSerializer, PrestationSerializer,
+    ClientSerializer, DevisSerializer, PrestationSerializer,
     RendezVousSerializer, RendezVousPublicSerializer,
 )
-from .services.ia import generer_devis_ia
-from .services.pricing import calculer_prix_ligne
+from .services.chiffrage import chiffrer, donnees_ligne, recalculer_estimation, remplacer_lignes
+from .services.ia import DevisIAError, generer_devis_ia
+from .services.pricing import TarificationError
 from .services.pdf import generer_pdf_devis
 from .services.email import (
     envoyer_devis_par_email, envoyer_confirmation_rdv, envoyer_proposition_rdv, envoyer_demande_rdv_public,
@@ -65,108 +67,92 @@ class DevisViewSet(viewsets.ModelViewSet):
             devis.client.statut = 'qualifie'
             devis.client.save(update_fields=['statut'])
 
+    @staticmethod
+    def _refus_fige(devis):
+        return Response(
+            {'error': "Ce devis est validé : il ne peut plus être modifié. Créez un nouveau devis pour toute modification."},
+            status=status.HTTP_409_CONFLICT,
+        ) if devis.est_fige else None
+
     @action(detail=True, methods=['post'])
     def generer_ia(self, request, pk=None):
-        """Génère synthèse et lignes via l'IA, puis calcule le prix de chaque
-        ligne à partir du profil/jours/complexité — l'IA n'indique jamais de
-        prix directement, voir services.pricing.calculer_prix_ligne."""
-        devis = self.get_object()
-        instructions = request.data.get('instructions', '')
+        """Génère synthèse, hypothèses, questions et lignes via l'IA, puis calcule
+        le prix de chaque ligne (services.pricing) — l'IA n'indique jamais de prix.
 
-        besoins = devis.besoins_client
-        if instructions:
-            besoins = f"{besoins}\n\nInstructions supplémentaires :\n{instructions}"
+        Tout est vérifié et chiffré AVANT de toucher au devis : en cas d'erreur
+        (IA invalide, tarif manquant), les lignes existantes restent intactes."""
+        devis = self.get_object()
+        if refus := self._refus_fige(devis):
+            return refus
 
         try:
-            result = generer_devis_ia(besoins, devis.client.nom)
-        except ValueError as exc:
-            return Response({'error': str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        except Exception as exc:
-            return Response(
-                {'error': f"Erreur lors de la génération IA : {exc}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+            result = generer_devis_ia(devis.besoins_client, devis.client.nom, request.data.get('instructions', ''))
+        except DevisIAError as exc:
+            return Response({'error': exc.message, 'details': exc.details}, status=exc.status_code)
 
-        devis.synthese_ia = result.get('synthese', '')
+        try:
+            lignes = [chiffrer({
+                'description': ligne['description'],
+                'quantite': 1,
+                'profil': ligne['profil_requis'],
+                'jours_par_personne': ligne['jours_par_personne'],
+                'nombre_personnes': ligne['nombre_personnes'],
+                'complexite': ligne['complexite'],
+            }, devis.mode_tarification) for ligne in result['lignes']]
+        except TarificationError as exc:
+            return Response({'error': f"Chiffrage impossible : {exc}"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
-        # Mode 'cout_reel' : l'IA donne toujours l'équipe/jours/complexité
-        # par ligne (utile pour voir la charge de travail), mais AUCUN prix
-        # par ligne n'est calculé ici — il n'y a pas de TJM à appliquer, le
-        # prix final viendra du coût réel saisi par l'admin (voir
-        # DevisSerializer.update et services.pricing.appliquer_marge_cout_reel).
-        # En mode 'estimation_ia' (par défaut), on garde le calcul habituel.
-        mode_cout_reel = devis.mode_tarification == 'cout_reel'
-
-        devis.lignes.all().delete()
-        for ligne in result.get('lignes', []):
-            profil = ligne.get('profil_requis', 'junior')
-            jours_estimes = ligne.get('jours_estimes', 1)
-            nombre_personnes = ligne.get('nombre_personnes', 1)
-            complexite = ligne.get('complexite', 'moyenne')
-
-            # Decimal('0') en mode 'cout_reel' : prix_unitaire est un champ
-            # obligatoire sur LigneDevis, mais n'a pas de sens dans ce mode —
-            # le front masque cette colonne quand mode_tarification = 'cout_reel'.
-            prix_unitaire = (
-                Decimal('0') if mode_cout_reel
-                else calculer_prix_ligne(profil, jours_estimes, nombre_personnes, complexite)
-            )
-
-            LigneDevis.objects.create(
-                devis=devis,
-                description=ligne['description'],
-                quantite=1,
-                profil=profil,
-                jours_estimes=jours_estimes,
-                nombre_personnes=nombre_personnes,
-                complexite=complexite,
-                prix_unitaire=prix_unitaire,
-            )
-
-        # estimation_montant = somme des lignes, jamais une valeur séparée
-        # que l'IA aurait pu faire diverger du détail réel — SAUF en mode
-        # 'cout_reel', où ce champ est piloté par le coût réel + marge
-        # (saisi séparément par l'admin) et pas par les lignes, qui sont
-        # toutes à 0 dans ce mode.
-        if not mode_cout_reel:
-            devis.estimation_montant = sum(l.total for l in devis.lignes.all())
-        devis.save()
+        with transaction.atomic():
+            deja_genere = bool(devis.synthese_ia) or devis.lignes.exists()
+            remplacer_lignes(devis, lignes)
+            devis.synthese_ia = result['synthese']
+            devis.hypotheses = result['hypotheses']
+            devis.questions_ouvertes = result['questions_ouvertes']
+            devis.budget_mentionne = result['budget_mentionne']   # affichage uniquement
+            devis.ia_reponse_brute = result['reponse_brute']
+            devis.ia_modele = result['modele']
+            devis.ia_version_prompt = result['version_prompt']
+            if deja_genere:
+                devis.version += 1
+            recalculer_estimation(devis)
+            devis.save()
 
         devis.refresh_from_db()
         return Response(DevisSerializer(devis).data)
 
     @action(detail=True, methods=['post'])
-    def valider(self, request, pk=None):
-        """Valide le devis, génère le PDF et l'envoie automatiquement au client."""
+    def recalculer_prix(self, request, pk=None):
+        """Rechiffre les lignes d'un brouillon avec les tarifs (TJM, multiplicateurs)
+        actuels — à utiliser quand le devis est signalé « tarifs modifiés »."""
         devis = self.get_object()
+        if refus := self._refus_fige(devis):
+            return refus
+        try:
+            lignes = [chiffrer(donnees_ligne(l), devis.mode_tarification) for l in devis.lignes.all()]
+        except TarificationError as exc:
+            return Response({'error': f"Chiffrage impossible : {exc}"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        with transaction.atomic():
+            remplacer_lignes(devis, lignes)
+            devis.version += 1
+            recalculer_estimation(devis)
+            devis.save()
+        devis.refresh_from_db()
+        return Response(DevisSerializer(devis).data)
 
-        if not devis.lignes.exists():
-            return Response(
-                {'error': "Impossible de valider un devis sans lignes."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        lignes = devis.lignes.all()
-        if devis.mode_tarification == 'cout_reel':
-            if not devis.estimation_montant or devis.estimation_montant <= 0:
-                return Response({'error': "Renseignez le coût réel avant de valider."},
-                                status=status.HTTP_400_BAD_REQUEST)
-        else:
-            a_zero = [l.description for l in lignes if l.prix_unitaire <= 0]
-            if a_zero:
-                return Response({'error': "Prix à 0 sur : " + ", ".join(a_zero)},
-                                status=status.HTTP_400_BAD_REQUEST)
-        devis.statut = 'valide'
-        devis.save()
+    @action(detail=True, methods=['get'])
+    def apercu(self, request, pk=None):
+        """GET /api/devis/{id}/apercu/ — le PDF exact qui sera envoyé, à relire AVANT
+        de valider (un brouillon porte la mention « Aperçu »)."""
+        devis = self.get_object()
+        response = HttpResponse(generer_pdf_devis(devis), content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="apercu_{devis.numero or devis.id}.pdf"'
+        return response
 
+    def _envoyer(self, devis):
+        """Envoie le devis par email ; 207 si l'envoi échoue (le devis reste validé)."""
         try:
             envoyer_devis_par_email(devis)
-            devis.statut = 'envoye'
-            devis.save()
-            if devis.client.statut != 'perdu':
-                devis.client.statut = 'client'
-                devis.client.save(update_fields=['statut'])
         except Exception as exc:
-            # Le devis reste "validé" même si l'envoi échoue — le manager peut réessayer
             return Response(
                 {
                     'status': 'devis validé mais email non envoyé',
@@ -175,8 +161,60 @@ class DevisViewSet(viewsets.ModelViewSet):
                 },
                 status=status.HTTP_207_MULTI_STATUS,
             )
-
+        devis.statut = 'envoye'
+        devis.save(update_fields=['statut', 'date_modification'])
+        if devis.client.statut != 'perdu':
+            devis.client.statut = 'client'
+            devis.client.save(update_fields=['statut'])
         return Response({'status': 'devis validé et envoyé au client', 'devis': DevisSerializer(devis).data})
+
+    @action(detail=True, methods=['post'])
+    def valider(self, request, pk=None):
+        """Valide le devis — il est alors FIGÉ : lignes, prix et montant ne
+        changeront plus, même si les TJM évoluent — puis l'envoie au client."""
+        devis = self.get_object()
+        if devis.est_fige:
+            return Response({'error': "Ce devis est déjà validé. Utilisez « Renvoyer l'email » si l'envoi a échoué."},
+                            status=status.HTTP_409_CONFLICT)
+        if not devis.lignes.exists():
+            return Response({'error': "Impossible de valider un devis sans lignes."}, status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            devis = Devis.objects.select_for_update().get(pk=devis.pk)   # pas de double validation simultanée
+            if devis.est_fige:
+                return Response({'error': "Ce devis est déjà validé."}, status=status.HTTP_409_CONFLICT)
+            try:
+                recalculer_estimation(devis)   # le montant figé correspond exactement aux lignes
+            except TarificationError as exc:
+                return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+            lignes = list(devis.lignes.all())
+            if devis.mode_tarification == 'cout_reel':
+                if not devis.estimation_montant or devis.estimation_montant <= 0:
+                    return Response({'error': "Renseignez le coût réel avant de valider."},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                a_zero = [l.description for l in lignes if l.prix_unitaire <= 0]
+                if a_zero:
+                    return Response({'error': "Prix à 0 sur : " + ", ".join(a_zero)},
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+            maintenant = timezone.now()
+            devis.statut = 'valide'
+            devis.date_validation = maintenant
+            devis.date_validite = timezone.localdate(maintenant) + timedelta(days=VALIDITE_DEVIS_JOURS)
+            devis.save()
+
+        return self._envoyer(devis)
+
+    @action(detail=True, methods=['post'])
+    def renvoyer(self, request, pk=None):
+        """Renvoie l'email d'un devis validé dont l'envoi avait échoué (le contenu ne change pas)."""
+        devis = self.get_object()
+        if devis.statut != 'valide':
+            return Response({'error': "Seul un devis validé mais non envoyé peut être renvoyé."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        return self._envoyer(devis)
 
     @action(detail=True, methods=['get'])
     def pdf(self, request, pk=None):
@@ -191,7 +229,7 @@ class DevisViewSet(viewsets.ModelViewSet):
 
         pdf_bytes = generer_pdf_devis(devis)
         response = HttpResponse(pdf_bytes, content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="devis_{devis.id}.pdf"'
+        response['Content-Disposition'] = f'attachment; filename="devis_{devis.numero or devis.id}.pdf"'
         return response
 
 

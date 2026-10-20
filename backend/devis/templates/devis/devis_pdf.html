@@ -77,12 +77,18 @@
 
             <text x="60" y="42" font-family="Helvetica, Arial, sans-serif" font-size="14" letter-spacing="3"
                 fill="#A9B6E8">DEVIS</text>
-            <text x="60" y="82" font-family="Helvetica, Arial, sans-serif" font-size="34" font-weight="bold"
-                fill="#FFFFFF">N&#176; {{ devis.id|stringformat:"04d" }}</text>
+            <text x="60" y="82" font-family="Helvetica, Arial, sans-serif" font-size="30" font-weight="bold"
+                fill="#FFFFFF">N&#176; {{ devis.numero }}</text>
 
+            {% if apercu %}
+            <rect x="60" y="98" width="230" height="26" rx="13" fill="#FEF3C7" />
+            <text x="175" y="115" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold"
+                letter-spacing="0.5" fill="#B45309" text-anchor="middle">APERÇU — NON ENVOYÉ</text>
+            {% else %}
             <rect x="60" y="98" width="180" height="26" rx="13" fill="{{ statut_fond }}" />
             <text x="150" y="115" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold"
                 letter-spacing="0.5" fill="{{ statut_couleur }}" text-anchor="middle">{{ statut_label }}</text>
+            {% endif %}
 
             <image href="{{ logo_path }}" x="900" y="18" width="52" height="52" />
             <text x="965" y="40" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="bold"
@@ -110,7 +116,10 @@
                         {% if company.adresse %}{{ company.adresse }}<br>{% endif %}
                         {{ company.email }}
                     </div>
-                    <div class="text" style="margin-top:10px;">Émis le {{ devis.date_creation|date:"d F Y" }}<br>Valable 30 jours</div>
+                    <div class="text" style="margin-top:10px;">
+                        Émis le {{ devis.date_validation|default:devis.date_creation|date:"d F Y" }}<br>
+                        Valable jusqu'au {{ date_validite|date:"d F Y" }}{% if devis.version > 1 %}<br>Version {{ devis.version }}{% endif %}
+                    </div>
                 </td>
             </tr>
         </table>
@@ -124,12 +133,11 @@
 
         <div class="lignes-wrap">
             <table class="lignes">
+                {# Le client ne voit que la description et le prix de chaque ligne : ni TJM, ni jours, ni multiplicateur. #}
                 <thead>
                     <tr>
-                        <td width="40%">Description</td>
-                        <td width="20%" class="text-right">Prix unitaire</td>
-                        <td width="16%" class="text-right">Quantité</td>
-                        <td width="24%" class="text-right">Total HT</td>
+                        <td{% if avec_prix_par_ligne %} width="72%"{% endif %}>{% if avec_prix_par_ligne %}Description{% else %}Périmètre de la prestation{% endif %}</td>
+                        {% if avec_prix_par_ligne %}<td width="28%" class="text-right">Prix HT</td>{% endif %}
                     </tr>
                 </thead>
                 <tbody>
@@ -140,9 +148,7 @@
                             <span class="desc-title">{{ ligne.description }}</span>
                             {% if ligne.prestation %}<span class="tag">{{ ligne.prestation.get_categorie_display }}</span>{% endif %}
                         </td>
-                        <td class="text-right">{{ ligne.prix_unitaire }} {{ devise_symbole }}</td>
-                        <td class="text-right">{{ ligne.quantite }}</td>
-                        <td class="text-right">{{ ligne.total }} {{ devise_symbole }}</td>
+                        {% if avec_prix_par_ligne %}<td class="text-right">{{ ligne.prix }} {{ devise_symbole }}</td>{% endif %}
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -178,7 +184,7 @@
 
                     <div class="block-title block-gap">Termes &amp; conditions</div>
                     {# devis.get_devise_display : libellé lisible depuis Devis.DEVISE_CHOICES (ex: "Euro (€)") #}
-                    <div class="block-text">Ce devis est valable 30 jours à compter de sa date d'émission. Prix exprimés en {{ devis.get_devise_display }}, hors taxes sauf mention contraire.</div>
+                    <div class="block-text">Ce devis est valable jusqu'au {{ date_validite|date:"d F Y" }}. Prix exprimés en {{ devis.get_devise_display }}, hors taxes sauf mention contraire.</div>
                 </td>
                 <td class="col-right">
                     <div class="signature-box">
