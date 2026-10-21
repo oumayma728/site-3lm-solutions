@@ -4,13 +4,42 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import ThemeToggle from './ThemeToggle';
+import { LangSwitch, useLang } from './LangProvider';
+import type { Translations } from '@/lib/i18n';
 import './Navbar.css';
 import Logo from '../Logo';
+
+const fr = {
+  home: 'Accueil',
+  services: 'Services',
+  internships: 'Stages 2026',
+  appointment: 'Prenez un rendez-vous',
+  brandLabel: '3LM Solutions, accueil',
+  mainNav: 'Navigation principale',
+  mobileNav: 'Navigation mobile',
+  openMenu: 'Ouvrir le menu',
+  closeMenu: 'Fermer le menu',
+};
+const T: Translations<typeof fr> = {
+  fr,
+  en: {
+    home: 'Home',
+    services: 'Services',
+    internships: 'Internships 2026',
+    appointment: 'Book a call',
+    brandLabel: '3LM Solutions, home',
+    mainNav: 'Main navigation',
+    mobileNav: 'Mobile navigation',
+    openMenu: 'Open menu',
+    closeMenu: 'Close menu',
+  },
+};
 
 export default function SiteNavbar() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
+  const t = T[useLang()];
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -27,29 +56,30 @@ export default function SiteNavbar() {
   return (
     <header className={`navbar ${scrolled ? 'is-scrolled' : ''}`}>
       <div className="nav-wrap">
-        <Link href="/" className="brand" aria-label="3LM Solutions, accueil">
+        <Link href="/" className="brand" aria-label={t.brandLabel}>
           <Logo height={42} />
         </Link>
 
-        <nav className="desktop-nav" aria-label="Navigation principale">
-          <Link className={active('/') ? 'active' : ''} href="/">Accueil</Link>
-          <Link href="/public/expertise" className={active('/public/expertise') ? 'active' : ''}>Services</Link>
+        <nav className="desktop-nav" aria-label={t.mainNav}>
+          <Link className={active('/') ? 'active' : ''} href="/">{t.home}</Link>
+          <Link href="/public/expertise" className={active('/public/expertise') ? 'active' : ''}>{t.services}</Link>
           {/** <Link href="/public/carrieres" className="nav-careers">Carrières</Link> **/}
           <Link href="/public/nearshore" className="nav-nearshore">Nearshore</Link>
-          <Link href="/public/stages" className="nav-internship">Stages 2026</Link>
+          <Link href="/public/stages" className="nav-internship">{t.internships}</Link>
 
         </nav>
 
         <div className="nav-actions">
+          <LangSwitch />
           <ThemeToggle />
-          <Link href="/public/rendez-vous" className="nav-appointment">Prenez un rendez-vous</Link>
+          <Link href="/public/rendez-vous" className="nav-appointment">{t.appointment}</Link>
         </div>
 
         <button
           className="nav-toggle"
           type="button"
           onClick={() => setOpen((v) => !v)}
-          aria-label={open ? 'Fermer le menu' : 'Ouvrir le menu'}
+          aria-label={open ? t.closeMenu : t.openMenu}
           aria-expanded={open}
         >
           {open ? '×' : '☰'}
@@ -57,14 +87,17 @@ export default function SiteNavbar() {
       </div>
 
       {open && (
-        <nav className="mobile-nav" aria-label="Navigation mobile">
+        <nav className="mobile-nav" aria-label={t.mobileNav}>
           {/* Same links as the desktop menu, in the same order */}
-          <Link href="/" className={active('/') ? 'active' : ''}>Accueil</Link>
-          <Link href="/public/expertise" className={active('/public/expertise') ? 'active' : ''}>Services</Link>
+          <Link href="/" className={active('/') ? 'active' : ''}>{t.home}</Link>
+          <Link href="/public/expertise" className={active('/public/expertise') ? 'active' : ''}>{t.services}</Link>
           <Link href="/public/nearshore" className={`nav-nearshore ${active('/public/nearshore') ? 'active' : ''}`}>Nearshore</Link>
-          <Link href="/public/stages" className={`nav-internship ${pathname.startsWith('/public/stages') ? 'active' : ''}`}>Stages 2026</Link>
-          <Link href="/public/rendez-vous" className="nav-appointment">Prenez un rendez-vous</Link>
-          <ThemeToggle className="theme-toggle-mobile" />
+          <Link href="/public/stages" className={`nav-internship ${pathname.startsWith('/public/stages') ? 'active' : ''}`}>{t.internships}</Link>
+          <Link href="/public/rendez-vous" className="nav-appointment">{t.appointment}</Link>
+          <div className="mobile-nav-tools">
+            <LangSwitch />
+            <ThemeToggle />
+          </div>
         </nav>
       )}
     </header>
