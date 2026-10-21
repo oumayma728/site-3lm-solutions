@@ -3,12 +3,81 @@ import { notFound } from 'next/navigation';
 import type { CSSProperties } from 'react';
 import SiteNavbar from '@/components/site/SiteNavbar';
 import SiteFooter from '@/components/site/SiteFooter';
+import { getLang } from '@/lib/i18n-server';
+import type { Translations } from '@/lib/i18n';
 import '@/components/site/tokens.css';
 import '@/components/site/Home.css';
 import '../Carriere.css';
 import './OffreDetail.css';
 import { getOffres , getOffreBySlug} from '@/lib/offres';
-import { programmes, accentFor } from '../../stages/stagesData';
+import { programmesByLang, accentFor } from '../../stages/stagesData';
+
+// Page labels only: the offer itself (title, missions…) is shown as written in the admin.
+const fr = {
+  internship: 'Stage',
+  job: 'Emploi',
+  department: 'Département',
+  programme: 'Programme',
+  type: 'Type',
+  duration: 'Durée',
+  location: 'Localisation',
+  level: 'Niveau',
+  experience: 'Expérience',
+  missions: 'Vos missions',
+  responsibilities: 'Responsabilités principales',
+  profile: 'Profil recherché',
+  qualifications: 'Qualifications requises',
+  benefits: 'Ce que nous offrons',
+  skills: 'Compétences recherchées',
+  backStages: '← Tous nos stages',
+  backJobs: '← Toutes nos offres',
+  applyNow: 'Postuler maintenant →',
+  apply: 'Postuler →',
+  about: (isStage: boolean): string => (isStage ? 'À propos du stage' : 'À propos du poste'),
+  fits: (isStage: boolean): string => (isStage ? 'Ce stage vous correspond ?' : 'Ce poste vous correspond ?'),
+  fitsText: 'Envoyez-nous votre CV et quelques lignes sur votre motivation, on vous répond rapidement.',
+  othersStages: 'Autres stages',
+  othersJobs: 'Voir aussi',
+  details: 'Détails →',
+  contactMarker: 'Entrer en contact',
+  question: (isStage: boolean): string => (isStage ? 'Une question sur ce stage ?' : 'Une question sur ce poste ?'),
+  questionText: 'Contactez-nous, nous répondons rapidement à toute question sur nos offres.',
+  call: 'Programmer un appel →',
+};
+const T: Translations<typeof fr> = {
+  fr,
+  en: {
+    internship: 'Internship',
+    job: 'Job',
+    department: 'Department',
+    programme: 'Program',
+    type: 'Type',
+    duration: 'Duration',
+    location: 'Location',
+    level: 'Level',
+    experience: 'Experience',
+    missions: 'Your missions',
+    responsibilities: 'Key responsibilities',
+    profile: 'Who we’re looking for',
+    qualifications: 'Requirements',
+    benefits: 'What we offer',
+    skills: 'Skills',
+    backStages: '← All our internships',
+    backJobs: '← All our openings',
+    applyNow: 'Apply now →',
+    apply: 'Apply →',
+    about: (isStage: boolean): string => (isStage ? 'About the internship' : 'About the role'),
+    fits: (isStage: boolean): string => (isStage ? 'Is this internship for you?' : 'Is this role for you?'),
+    fitsText: 'Send us your CV and a few lines about your motivation — we’ll get back to you quickly.',
+    othersStages: 'Other internships',
+    othersJobs: 'See also',
+    details: 'Details →',
+    contactMarker: 'Get in touch',
+    question: (isStage: boolean): string => (isStage ? 'A question about this internship?' : 'A question about this role?'),
+    questionText: 'Contact us — we answer any question about our openings quickly.',
+    call: 'Schedule a call →',
+  },
+};
 
 export async function generateStaticParams() {
   const [emplois, stages] = await Promise.all([getOffres('emploi'), getOffres('stage')]);
@@ -30,6 +99,8 @@ const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 export default async function OffreDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  const lang = await getLang();
+  const t = T[lang];
   const offre = await getOffreBySlug(slug);
   if (!offre) notFound();
  const tous = await getOffres(offre.type_offre);
@@ -37,23 +108,22 @@ export default async function OffreDetailsPage({ params }: { params: Promise<{ s
   const autres = tous.filter((o) => o.slug !== slug).slice(0, 3);
 
   const isStage = offre.type_offre === 'stage';
-  const programme = isStage && offre.programme ? programmes[offre.programme] : null;
-  const typeLabel = programme?.label ?? (isStage ? 'Stage' : cap(offre.contract_type || 'Emploi'));
-  const noun = isStage ? 'stage' : 'poste';
+  const programme = isStage && offre.programme ? programmesByLang[lang][offre.programme] : null;
+  const typeLabel = programme?.label ?? (isStage ? t.internship : cap(offre.contract_type || t.job));
 
   // Only show the facts that are actually filled in
   const summary = [
-    { label: 'Département', value: cap(offre.departement) },
-    { label: isStage ? 'Programme' : 'Type', value: typeLabel },
-    { label: 'Durée', value: programme?.duree ?? '' },
-    { label: 'Localisation', value: cap(offre.location) },
-    { label: isStage ? 'Niveau' : 'Expérience', value: offre.experience },
+    { label: t.department, value: cap(offre.departement) },
+    { label: isStage ? t.programme : t.type, value: typeLabel },
+    { label: t.duration, value: programme?.duree ?? '' },
+    { label: t.location, value: cap(offre.location) },
+    { label: isStage ? t.level : t.experience, value: offre.experience },
   ].filter((item) => item.value);
 
   const lists = [
-    { title: isStage ? 'Vos missions' : 'Responsabilités principales', items: offre.responsibilities },
-    { title: isStage ? 'Profil recherché' : 'Qualifications requises', items: offre.qualifications },
-    { title: 'Ce que nous offrons', items: offre.benefits },
+    { title: isStage ? t.missions : t.responsibilities, items: offre.responsibilities },
+    { title: isStage ? t.profile : t.qualifications, items: offre.qualifications },
+    { title: t.benefits, items: offre.benefits },
   ].filter((section) => section.items.length > 0);
 
   const applyHref = `/public/candidature?type=${isStage ? 'stage' : 'poste'}&ref=${offre.slug}`;
@@ -69,7 +139,7 @@ export default async function OffreDetailsPage({ params }: { params: Promise<{ s
         <div className="carriere-bg" aria-hidden="true" />
         <section className="offre-hero">
           <Link href={backHref} className="detail-back">
-            ← {isStage ? 'Tous nos stages' : 'Toutes nos offres'}
+            {isStage ? t.backStages : t.backJobs}
           </Link>
           {offre.departement && <span className="offre-hero-domaine">{offre.departement}</span>}
           <h1>{offre.titre}</h1>
@@ -80,7 +150,7 @@ export default async function OffreDetailsPage({ params }: { params: Promise<{ s
             {programme && <span>📅 {programme.duree}</span>}
             {!isStage && offre.experience && <span>⏱️ {offre.experience}</span>}
           </div>
-          <Link href={applyHref} className="gradient-button">Postuler maintenant →</Link>
+          <Link href={applyHref} className="gradient-button">{t.applyNow}</Link>
         </section>
 
         {summary.length > 0 && (
@@ -102,7 +172,7 @@ export default async function OffreDetailsPage({ params }: { params: Promise<{ s
         <section className="offre-body">
           {offre.about_role.length > 0 && (
             <div>
-              <h2>À propos du {noun}</h2>
+              <h2>{t.about(isStage)}</h2>
               {offre.about_role.map((p, i) => <p key={i}>{p}</p>)}
             </div>
           )}
@@ -118,7 +188,7 @@ export default async function OffreDetailsPage({ params }: { params: Promise<{ s
 
           {offre.skills.length > 0 && (
             <div>
-              <h2>Compétences recherchées</h2>
+              <h2>{t.skills}</h2>
               <div className="offre-skills">
                 {offre.skills.map((s) => <span key={s}>{s}</span>)}
               </div>
@@ -127,16 +197,16 @@ export default async function OffreDetailsPage({ params }: { params: Promise<{ s
 
           <div className="offre-apply-card">
             <div>
-              <h2>Ce {noun} vous correspond ?</h2>
-              <p>Envoyez-nous votre CV et quelques lignes sur votre motivation, on vous répond rapidement.</p>
+              <h2>{t.fits(isStage)}</h2>
+              <p>{t.fitsText}</p>
             </div>
-            <Link href={applyHref} className="gradient-button">Postuler →</Link>
+            <Link href={applyHref} className="gradient-button">{t.apply}</Link>
           </div>
         </section>
 
         {autres.length > 0 && (
           <section className="offre-others">
-            <div className="section-marker"><span />{isStage ? 'Autres stages' : 'Voir aussi'}</div>
+            <div className="section-marker"><span />{isStage ? t.othersStages : t.othersJobs}</div>
             <div className="jobs-list">
               {autres.map((o) => (
                 <article className="job-card" key={o.slug}>
@@ -148,7 +218,7 @@ export default async function OffreDetailsPage({ params }: { params: Promise<{ s
                     </div>
                     <p className="job-desc">{o.description}</p>
                     <div className="job-actions">
-                      <Link href={`/public/carrieres/${o.slug}`} className="job-btn job-btn-ghost">Détails →</Link>
+                      <Link href={`/public/carrieres/${o.slug}`} className="job-btn job-btn-ghost">{t.details}</Link>
                     </div>
                   </div>
                 </article>
@@ -159,11 +229,11 @@ export default async function OffreDetailsPage({ params }: { params: Promise<{ s
 
         <section className="home-contact-strip">
           <div>
-            <div className="section-marker"><span />Entrer en contact</div>
-            <h2>Une question sur ce {noun} ?</h2>
-            <p>Contactez-nous, nous répondons rapidement à toute question sur nos offres.</p>
+            <div className="section-marker"><span />{t.contactMarker}</div>
+            <h2>{t.question(isStage)}</h2>
+            <p>{t.questionText}</p>
           </div>
-          <Link href="/public/rendez-vous" className="gradient-button">Programmer un appel →</Link>
+          <Link href="/public/rendez-vous" className="gradient-button">{t.call}</Link>
         </section>
       </main>
       <SiteFooter />

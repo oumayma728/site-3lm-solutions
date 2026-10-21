@@ -28,6 +28,15 @@
 .theme-toggle svg{width:16px;height:16px}
 .theme-toggle-mobile{align-self:flex-start;margin-top:14px}
 
+/* FR | EN language switch */
+.lang-switch{display:inline-flex;align-items:center;padding:3px;border:1px solid var(--line);border-radius:20px;background:var(--overlay-soft)}
+.lang-switch button{min-width:34px;height:28px;padding:0 8px;border:0;border-radius:16px;background:none;color:var(--muted);font:700 11.5px 'Inter',sans-serif;letter-spacing:.5px;cursor:pointer;transition:color .2s,background .2s}
+.lang-switch button:hover{color:var(--ink)}
+.lang-switch button.active{background:var(--overlay);color:var(--ink)}
+.lang-switch.is-pending{opacity:.6}
+.mobile-nav-tools{display:flex;align-items:center;gap:12px;margin-top:14px}
+.mobile-nav-tools .lang-switch button{height:36px;min-width:44px}
+
 .nav-toggle{display:none;margin-left:auto;margin-right:-10px;width:44px;height:44px;place-items:center;border:0;border-radius:12px;background:none;color:var(--ink);font-size:24px;line-height:1;cursor:pointer}
 .nav-toggle:active{background:var(--overlay)}
 .mobile-nav{display:none}

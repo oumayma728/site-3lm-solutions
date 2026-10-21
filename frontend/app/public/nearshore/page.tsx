@@ -1,17 +1,99 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import SiteNavbar from '@/components/site/SiteNavbar';
 import SiteFooter from '@/components/site/SiteFooter';
+import ContactStrip from '@/components/site/ContactStrip';
+import { getLang } from '@/lib/i18n-server';
+import type { Translations } from '@/lib/i18n';
 import '@/components/site/tokens.css';
 import '@/components/site/Home.css';
 import './nearshore.css';
 
-export const metadata = {
-  title: 'Nearshore IT Services',
-  description:
-    "3LM Solutions accompagne des entreprises européennes avec une équipe technique basée à Ariana, Tunisie, sur vos horaires de travail.",
+const fr = {
+  metaDescription:
+    '3LM Solutions accompagne des entreprises européennes avec une équipe technique basée à Ariana, Tunisie, sur vos horaires de travail.',
+  h1: ['Votre équipe tech.', 'À une heure de vous.'],
+  lead: '3LM Solutions accompagne les entreprises européennes avec une équipe technique basée à Ariana, en Tunisie. Une collaboration de proximité, une communication fluide et des horaires de travail adaptés à vos besoins.',
+  discuss: 'Discuter de mon projet →',
+  floats: ['🇹🇳 Ariana', '🇪🇺 Vos bureaux', 'Même journée de travail'],
+  stats: ['Fuseau horaire aligné', 'Équipe 100% francophone', 'Délai de réponse garanti'],
+  statement: ['Une équipe technique ', 'basée en Tunisie', ', qui travaille ', 'comme si elle était chez vous', '.'],
+  whyMarker: 'Pourquoi 3LM',
+  bento: [
+    ['Horaires alignés', 'Nous travaillons sur vos horaires de travail européens. Pas de décalage à gérer, pas d’attente jusqu’au lendemain pour une réponse — les échanges se font en temps réel, comme avec une équipe sur place.'],
+    ['Équipe francophone', 'Communication directe, sans barrière de langue ni intermédiaire.'],
+    ['Coûts maîtrisés', 'Une expertise de qualité, pour un budget plus accessible qu’une équipe interne en Europe.'],
+    ['Qualité constante', 'Méthodologie agile, livrables réguliers, suivi rigoureux — une équipe stable, sans rotation constante de profils.'],
+  ] as [string, string][],
+  compareMarker: 'Le comparatif',
+  compareTitle: 'Pourquoi les entreprises nous choisissent plutôt qu’un recrutement local.',
+  inHouse: 'Équipe interne en Europe',
+  inHouseItems: [
+    'Un processus de recrutement qui peut prendre plusieurs semaines',
+    'Des coûts salariaux et des charges associés à l’embauche',
+    'Du temps consacré à l’intégration et à la montée en compétences',
+    'Une capacité d’évolution liée aux ressources internes disponibles',
+  ],
+  ours: 'Équipe 3LM Nearshore',
+  oursItems: [
+    'Un démarrage organisé selon le périmètre et les besoins du projet',
+    'Un budget défini selon le modèle de collaboration retenu',
+    'Un suivi structuré et une documentation du projet',
+    'Des ressources ajustables selon l’évolution de vos besoins',
+  ],
+};
+const T: Translations<typeof fr> = {
+  fr,
+  en: {
+    metaDescription:
+      '3LM Solutions supports European companies with a technical team based in Ariana, Tunisia, working your business hours.',
+    h1: ['Your tech team.', 'One hour away.'],
+    lead: '3LM Solutions supports European companies with a technical team based in Ariana, Tunisia. A close collaboration, smooth communication and working hours that fit your needs.',
+    discuss: 'Discuss my project →',
+    floats: ['🇹🇳 Ariana', '🇪🇺 Your offices', 'Same working day'],
+    stats: ['Aligned time zone', '100% French-speaking team', 'Guaranteed response time'],
+    statement: ['A technical team ', 'based in Tunisia', ', working ', 'as if it were in your office', '.'],
+    whyMarker: 'Why 3LM',
+    bento: [
+      ['Aligned hours', 'We work on your European business hours. No time difference to manage, no waiting until the next day for an answer — conversations happen in real time, just like with an on-site team.'],
+      ['French-speaking team', 'Direct communication, with no language barrier and no middleman.'],
+      ['Controlled costs', 'Quality expertise at a more accessible budget than an in-house team in Europe.'],
+      ['Consistent quality', 'Agile methodology, regular deliverables, rigorous follow-up — a stable team, without constant turnover.'],
+    ],
+    compareMarker: 'The comparison',
+    compareTitle: 'Why companies choose us over hiring locally.',
+    inHouse: 'In-house team in Europe',
+    inHouseItems: [
+      'A hiring process that can take several weeks',
+      'Salary costs and employer charges that come with hiring',
+      'Time spent on onboarding and training',
+      'Capacity to grow limited by available internal resources',
+    ],
+    ours: '3LM Nearshore team',
+    oursItems: [
+      'A start organized around the scope and needs of the project',
+      'A budget set by the collaboration model you choose',
+      'Structured follow-up and project documentation',
+      'Resources that scale with your needs',
+    ],
+  },
 };
 
-export default function NearshorePage() {
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: 'Nearshore IT Services', description: T[await getLang()].metaDescription };
+}
+
+const STAT_ICONS = [
+  <svg key="s1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>,
+  <svg key="s2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>,
+  <svg key="s3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" /></svg>,
+];
+const STAT_NUMS = ['GMT+1', 'FR', '<24h'];
+const BENTO_CLASSES = ['bento-card bento-large', 'bento-card', 'bento-card', 'bento-card bento-wide'];
+
+export default async function NearshorePage() {
+  const lang = await getLang();
+  const t = T[lang];
   return (
     <div className="site-lm">
       <SiteNavbar />
@@ -21,109 +103,75 @@ export default function NearshorePage() {
           <div className="ns-hero-text">
             <span className="hero-badge"><span className="dot" />Nearshore</span>
             <h1>
-              Votre équipe tech.<br />
-              <span className="gradient-text">À une heure de vous.</span>
+              {t.h1[0]}<br />
+              <span className="gradient-text">{t.h1[1]}</span>
             </h1>
-            <p>
-              3LM Solutions accompagne les entreprises européennes avec une équipe technique basée à Ariana, en Tunisie. Une collaboration de proximité, une communication fluide et des horaires de travail adaptés à vos besoins.
-            </p>
+            <p>{t.lead}</p>
             <div className="home-actions">
-              <Link href="/public/rendez-vous" className="gradient-button">Discuter de mon projet →</Link>
+              <Link href="/public/rendez-vous" className="gradient-button">{t.discuss}</Link>
             </div>
           </div>
           <div className="ns-hero-visual" aria-hidden="true">
             <span className="ns-orb" />
-            <div className="ns-float-card ns-float-1">🇹🇳 Ariana</div>
-            <div className="ns-float-card ns-float-2">🇪🇺 Vos bureaux</div>
-            <div className="ns-float-card ns-float-3">Même journée de travail</div>
+            {t.floats.map((label, i) => (
+              <div key={label} className={`ns-float-card ns-float-${i + 1}`}>{label}</div>
+            ))}
           </div>
         </section>
 
         <div className="stats-strip">
           <div className="stats-strip-inner">
-            <div className="stat-item">
-              <span className="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg></span>
-              <span><span className="stat-num">GMT+1</span><span className="stat-label">Fuseau horaire aligné</span></span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg></span>
-              <span><span className="stat-num">FR</span><span className="stat-label">Équipe 100% francophone</span></span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" /></svg></span>
-              <span><span className="stat-num">&lt;24h</span><span className="stat-label">Délai de réponse garanti</span></span>
-            </div>
+            {t.stats.map((label, i) => (
+              <div className="stat-item" key={label}>
+                <span className="stat-icon">{STAT_ICONS[i]}</span>
+                <span><span className="stat-num">{STAT_NUMS[i]}</span><span className="stat-label">{label}</span></span>
+              </div>
+            ))}
           </div>
         </div>
 
         <section className="ns-statement">
           <p>
-            Une équipe technique <span className="gradient-text">basée en Tunisie</span>,
-            qui travaille <span className="gradient-text">comme si elle était chez vous</span>.
+            {t.statement[0]}<span className="gradient-text">{t.statement[1]}</span>
+            {t.statement[2]}<span className="gradient-text">{t.statement[3]}</span>{t.statement[4]}
           </p>
         </section>
 
         <section className="ns-bento">
-          <div className="section-marker"><span />Pourquoi 3LM</div>
+          <div className="section-marker"><span />{t.whyMarker}</div>
           <div className="bento-grid">
-            <article className="bento-card bento-large">
-              <span className="bento-tag">01</span>
-              <h3>Horaires alignés</h3>
-              <p>Nous travaillons sur vos horaires de travail européens. Pas de décalage à gérer, pas d&rsquo;attente jusqu&rsquo;au lendemain pour une réponse — les échanges se font en temps réel, comme avec une équipe sur place.</p>
-            </article>
-            <article className="bento-card">
-              <span className="bento-tag">02</span>
-              <h3>Équipe francophone</h3>
-              <p>Communication directe, sans barrière de langue ni intermédiaire.</p>
-            </article>
-            <article className="bento-card">
-              <span className="bento-tag">03</span>
-              <h3>Coûts maîtrisés</h3>
-              <p>Une expertise de qualité, pour un budget plus accessible qu&rsquo;une équipe interne en Europe.</p>
-            </article>
-            <article className="bento-card bento-wide">
-              <span className="bento-tag">04</span>
-              <h3>Qualité constante</h3>
-              <p>Méthodologie agile, livrables réguliers, suivi rigoureux — une équipe stable, sans rotation constante de profils.</p>
-            </article>
+            {t.bento.map(([title, text], i) => (
+              <article className={BENTO_CLASSES[i]} key={title}>
+                <span className="bento-tag">{String(i + 1).padStart(2, '0')}</span>
+                <h3>{title}</h3>
+                <p>{text}</p>
+              </article>
+            ))}
           </div>
         </section>
 
         <section className="ns-compare">
-          <div className="section-marker"><span />Le comparatif</div>
+          <div className="section-marker"><span />{t.compareMarker}</div>
           <div className="section-heading">
-            <h2>Pourquoi les entreprises nous choisissent plutôt qu&rsquo;un recrutement local.</h2>
+            <h2>{t.compareTitle}</h2>
           </div>
           <div className="ns-compare-grid">
             <div className="compare-card muted">
-              <h3>Équipe interne en Europe</h3>
+              <h3>{t.inHouse}</h3>
               <ul className="compare-list">
-                <li><Cross />Un processus de recrutement qui peut prendre plusieurs semaines</li>
-                <li><Cross />Des coûts salariaux et des charges associés à l’embauche</li>
-                <li><Cross />Du temps consacré à l’intégration et à la montée en compétences</li>
-                <li><Cross />Une capacité d’évolution liée aux ressources internes disponibles</li>
+                {t.inHouseItems.map((item) => <li key={item}><Cross />{item}</li>)}
               </ul>
             </div>
             <div className="compare-card highlight">
-              <h3>Équipe 3LM Nearshore</h3>
+              <h3>{t.ours}</h3>
               <ul className="compare-list">
-                <li><Check />Un démarrage organisé selon le périmètre et les besoins du projet</li>
-                <li><Check />Un budget défini selon le modèle de collaboration retenu</li>
-                <li><Check />Un suivi structuré et une documentation du projet</li>
-                <li><Check />Des ressources ajustables selon l’évolution de vos besoins</li>
+                {t.oursItems.map((item) => <li key={item}><Check />{item}</li>)}
               </ul>
             </div>
           </div>
         </section>
 
-        <section className="home-contact-strip">
-          <div>
-            <div className="section-marker"><span />Entrer en contact</div>
-            <h2>Votre prochain projet mérite une base solide.</h2>
-            <p>Expliquez-nous votre besoin en 15 minutes et repartez avec une approche claire, chiffrée et réaliste.</p>
-          </div>
-          <Link href="/public/rendez-vous" className="gradient-button">Programmer un appel →</Link>
-        </section>
+        <ContactStrip lang={lang} />
       </main>
       <SiteFooter />
     </div>

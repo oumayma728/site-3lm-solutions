@@ -2,6 +2,8 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { ToastProvider } from "@/components/ToastProvider";
+import { LangProvider } from "@/components/site/LangProvider";
+import { getLang } from "@/lib/i18n-server";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -19,16 +21,20 @@ const themeInitScript = `
 })();
 `;
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // French by default; English when the visitor picked it with the FR | EN switch (cookie)
+  const lang = await getLang();
   return (
-    <html lang="fr" suppressHydrationWarning>
+    <html lang={lang} suppressHydrationWarning>
       <head>
         <Script id="theme-init" strategy="beforeInteractive">{themeInitScript}</Script>
       </head>
       <body>
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+        <LangProvider lang={lang}>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </LangProvider>
       </body>
     </html>
   );

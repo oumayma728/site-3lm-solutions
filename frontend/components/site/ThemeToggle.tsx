@@ -1,8 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useLang } from './LangProvider';
 
 const STORAGE_KEY = 'theme';
+
+const LABELS = {
+  fr: { toDark: 'Activer le mode sombre', toLight: 'Activer le mode clair', dark: 'Mode sombre', light: 'Mode clair' },
+  en: { toDark: 'Switch to dark mode', toLight: 'Switch to light mode', dark: 'Dark mode', light: 'Light mode' },
+};
 
 function applyTheme(theme: 'light' | 'dark') {
   document.documentElement.dataset.theme = theme;
@@ -12,6 +18,7 @@ function applyTheme(theme: 'light' | 'dark') {
 export default function ThemeToggle({ className }: { className?: string }) {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [mounted, setMounted] = useState(false);
+  const l = LABELS[useLang()];
 
   useEffect(() => {
     const current = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
@@ -34,8 +41,8 @@ export default function ThemeToggle({ className }: { className?: string }) {
       type="button"
       className={`theme-toggle ${className ?? ''}`}
       onClick={toggle}
-      aria-label={theme === 'light' ? 'Activer le mode sombre' : 'Activer le mode clair'}
-      title={theme === 'light' ? 'Mode sombre' : 'Mode clair'}
+      aria-label={theme === 'light' ? l.toDark : l.toLight}
+      title={theme === 'light' ? l.dark : l.light}
     >
       {theme === 'light' ? (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

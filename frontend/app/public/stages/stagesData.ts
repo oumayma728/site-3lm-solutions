@@ -1,3 +1,5 @@
+import type { Lang } from '@/lib/i18n';
+
 export type Programme = 'ete' | 'pfe';
 
 export type Offre = {
@@ -14,22 +16,45 @@ export type Offre = {
   stack: string[];
 };
 
-export const programmes: Record<Programme, { label: string; periode: string; duree: string; texte: string }> = {
-  ete: {
-    label: 'Stage d’été',
-    periode: 'Juin — Août 2026',
-    duree: '~2 mois',
-    texte:
-      "Une immersion courte et concrète pendant les vacances universitaires. Vous rejoignez une équipe sur un besoin réel et livrez quelque chose de concret avant la rentrée.",
+type ProgrammeInfo = { label: string; periode: string; duree: string; texte: string };
+
+export const programmesByLang: Record<Lang, Record<Programme, ProgrammeInfo>> = {
+  fr: {
+    ete: {
+      label: 'Stage d’été',
+      periode: 'Juin — Août 2026',
+      duree: '~2 mois',
+      texte:
+        "Une immersion courte et concrète pendant les vacances universitaires. Vous rejoignez une équipe sur un besoin réel et livrez quelque chose de concret avant la rentrée.",
+    },
+    pfe: {
+      label: 'Stage de fin d’études (PFE)',
+      periode: 'Février — Juillet 2026',
+      duree: '5 à 6 mois',
+      texte:
+        "Un projet complet, de la conception à la mise en production, avec un mentor dédié tout au long du parcours — et une possibilité réelle d’embauche à la clé.",
+    },
   },
-  pfe: {
-    label: 'Stage de fin d’études (PFE)',
-    periode: 'Février — Juillet 2026',
-    duree: '5 à 6 mois',
-    texte:
-      "Un projet complet, de la conception à la mise en production, avec un mentor dédié tout au long du parcours — et une possibilité réelle d’embauche à la clé.",
+  en: {
+    ete: {
+      label: 'Summer internship',
+      periode: 'June — August 2026',
+      duree: '~2 months',
+      texte:
+        'A short, hands-on immersion during the university holidays. You join a team on a real need and deliver something concrete before the new term.',
+    },
+    pfe: {
+      label: 'Final-year internship (PFE)',
+      periode: 'February — July 2026',
+      duree: '5 to 6 months',
+      texte:
+        'A complete project, from design to production, with a dedicated mentor all the way through — and a real chance of being hired at the end.',
+    },
   },
 };
+
+// French labels: kept for code that is not translated (e.g. the admin)
+export const programmes = programmesByLang.fr;
 
 // Accent colour per department, limited to the site template's palette (tokens.css),
 // so it also follows the light/dark theme
@@ -42,12 +67,20 @@ export function accentFor(departement: string) {
   return TEMPLATE_ACCENTS[Math.abs(hash) % TEMPLATE_ACCENTS.length];
 }
 
-export const parcours = [
-  { num: '01', titre: 'Candidature', texte: 'Envoyez votre CV accompagné de quelques lignes présentant votre parcours, vos compétences et vos motivations.' },
-  { num: '02', titre: 'Entretien', texte: 'Un échange direct avec l’équipe technique, sur votre parcours et vos envies.' },
-  { num: '03', titre: 'Intégration', texte: 'Un mentor dédié, un environnement de travail réel dès le premier jour.' },
-  { num: '04', titre: 'Projet concret', texte: 'Vous contribuez à un vrai produit utilisé par de vrais clients — pas un exercice.' },
-];
+export const parcoursByLang: Record<Lang, { num: string; titre: string; texte: string }[]> = {
+  fr: [
+    { num: '01', titre: 'Candidature', texte: 'Envoyez votre CV accompagné de quelques lignes présentant votre parcours, vos compétences et vos motivations.' },
+    { num: '02', titre: 'Entretien', texte: 'Un échange direct avec l’équipe technique, sur votre parcours et vos envies.' },
+    { num: '03', titre: 'Intégration', texte: 'Un mentor dédié, un environnement de travail réel dès le premier jour.' },
+    { num: '04', titre: 'Projet concret', texte: 'Vous contribuez à un vrai produit utilisé par de vrais clients — pas un exercice.' },
+  ],
+  en: [
+    { num: '01', titre: 'Application', texte: 'Send your CV with a few lines about your background, your skills and what motivates you.' },
+    { num: '02', titre: 'Interview', texte: 'A direct conversation with the technical team about your background and your goals.' },
+    { num: '03', titre: 'Onboarding', texte: 'A dedicated mentor and a real working environment from day one.' },
+    { num: '04', titre: 'Real project', texte: 'You contribute to a real product used by real clients — not an exercise.' },
+  ],
+};
 
 export const offres: Offre[] = [
   {

@@ -1,19 +1,44 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import SiteNavbar from '@/components/site/SiteNavbar';
 import SiteFooter from '@/components/site/SiteFooter';
+import ContactStrip from '@/components/site/ContactStrip';
+import { getLang } from '@/lib/i18n-server';
+import type { Translations } from '@/lib/i18n';
 import '@/components/site/tokens.css';
 import '@/components/site/Home.css';
 import './Expertise.css';
-import { services } from './serviceData';
+import { getServices } from './serviceData';
 import { serviceIcons } from './serviceIcons';
 
-export const metadata = {
-  title: 'Expertise',
-  description:
-    "Le détail des expertises de 3LM Solutions : intelligence artificielle, data & analytics, IoT, DevOps & cloud, développement web & mobile, ERP et community management.",
+const fr = {
+  metaTitle: 'Expertise',
+  metaDescription:
+    'Le détail des expertises de 3LM Solutions : intelligence artificielle, data & analytics, IoT, DevOps & cloud, développement web & mobile, ERP et community management.',
+  h1: ['Huit domaines, ', 'une seule équipe', '.'],
+  lead: 'Du développement logiciel à l’intelligence artificielle, nous concevons des solutions adaptées à vos enjeux métier. Explorez nos expertises et découvrez comment nous pouvons concrètement vous aider.',
+  more: 'En savoir plus →',
+};
+const T: Translations<typeof fr> = {
+  fr,
+  en: {
+    metaTitle: 'Expertise',
+    metaDescription:
+      '3LM Solutions’ areas of expertise in detail: artificial intelligence, data & analytics, IoT, DevOps & cloud, web & mobile development, ERP and community management.',
+    h1: ['Eight fields, ', 'one team', '.'],
+    lead: 'From software development to artificial intelligence, we design solutions that fit your business challenges. Explore our expertise and see how we can help you in practice.',
+    more: 'Learn more →',
+  },
 };
 
-export default function ExpertisePage() {
+export async function generateMetadata(): Promise<Metadata> {
+  const t = T[await getLang()];
+  return { title: t.metaTitle, description: t.metaDescription };
+}
+
+export default async function ExpertisePage() {
+  const lang = await getLang();
+  const t = T[lang];
   return (
     <div className="site-lm">
       <SiteNavbar />
@@ -21,13 +46,13 @@ export default function ExpertisePage() {
         <div className="expertise-bg" aria-hidden="true" />
         <section className="expertise-hero">
           <span className="hero-badge"><span className="dot" />Expertise</span>
-          <h1>Huit domaines, <span className="gradient-text">une seule équipe</span>.</h1>
-          <p>Du développement logiciel à l’intelligence artificielle, nous concevons des solutions adaptées à vos enjeux métier. Explorez nos expertises et découvrez comment nous pouvons concrètement vous aider.</p>
+          <h1>{t.h1[0]}<span className="gradient-text">{t.h1[1]}</span>{t.h1[2]}</h1>
+          <p>{t.lead}</p>
         </section>
 
         <section className="expertise-grid-section">
           <div className="expertise-grid">
-            {services.map((s) => (
+            {getServices(lang).map((s) => (
               <Link
                 href={`/public/expertise/${s.slug}`}
                 className="discipline-card"
@@ -37,20 +62,13 @@ export default function ExpertisePage() {
                 <span className="card-icon">{serviceIcons[s.slug]}</span>
                 <h3>{s.title}</h3>
                 <p>{s.shortDescription}</p>
-                <span className="card-link">En savoir plus →</span>
+                <span className="card-link">{t.more}</span>
               </Link>
             ))}
           </div>
         </section>
 
-        <section className="home-contact-strip">
-          <div>
-            <div className="section-marker"><span />Entrer en contact</div>
-            <h2>Votre prochain projet mérite une base solide.</h2>
-            <p>Expliquez-nous votre besoin en 15 minutes et repartez avec une approche claire, chiffrée et réaliste.</p>
-          </div>
-          <Link href="/public/rendez-vous" className="gradient-button">Programmer un appel →</Link>
-        </section>
+        <ContactStrip lang={lang} />
       </main>
       <SiteFooter />
     </div>
