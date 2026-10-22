@@ -79,10 +79,10 @@ const T: Translations<typeof fr> = {
   },
 };
 
-export async function generateStaticParams() {
-  const [emplois, stages] = await Promise.all([getOffres('emploi'), getOffres('stage')]);
-  return [...emplois, ...stages].map((o) => ({ slug: o.slug }));
-}
+// Rendered on every request: the page reads the language cookie, and offers created after
+// the build would otherwise be prerendered on first visit, where reading cookies is not
+// allowed (production-only 500). No generateStaticParams for the same reason.
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

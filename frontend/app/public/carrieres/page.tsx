@@ -9,7 +9,8 @@ import '@/components/site/tokens.css';
 import '@/components/site/Home.css';
 import './Carriere.css';
 import {getOffres} from '@/lib/offres';
-export const revalidate = 86400;
+// Rendered per request (language cookie, offers always up to date)
+export const dynamic = 'force-dynamic';
 
 const fr = {
     metaTitle: 'Carrières',
