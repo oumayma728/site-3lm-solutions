@@ -6,13 +6,26 @@ import { getAllOffresAdmin, deleteOffre, updateOffre, type Offre } from '@/lib/o
 import PageHeader from '@/components/PageHeader';
 import { useToast } from '@/components/ToastProvider';
 
-const FILTERS = ['tous', 'emploi', 'stage'] as const;
+type Vue = 'actives' | 'archivees';
+const TYPES = ['tous', 'emploi', 'stage'] as const;
+
+// Ouverte (accepts applications) → Clôturée (still public, no applications) → Archivée (hidden, kept here)
+function statutDe(o: Offre) {
+  if (!o.actif) return { label: 'Archivée', color: 'var(--ink-soft)' };
+  if (o.cloturee) return { label: 'Clôturée', color: 'var(--accent-amber)' };
+  return { label: 'Ouverte', color: 'var(--accent-sage)' };
+}
+
+const COLS = 'grid grid-cols-[minmax(0,1fr)_90px_130px_100px_auto] gap-4';
+const btn =
+  'rounded-lg border border-[var(--line)] bg-[var(--surface)] px-2.5 py-1.5 text-xs font-medium transition-colors hover:border-[var(--accent-secondary)] hover:text-[var(--accent-secondary)] disabled:opacity-40';
 
 export default function OffresListPage() {
   const toast = useToast();
   const [offres, setOffres] = useState<Offre[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<(typeof FILTERS)[number]>('tous');
+  const [vue, setVue] = useState<Vue>('actives');
+  const [type, setType] = useState<(typeof TYPES)[number]>('tous');
   const [busySlug, setBusySlug] = useState<string | null>(null);
 
   useEffect(() => {
@@ -23,13 +36,36 @@ export default function OffresListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filtered = useMemo(
-    () => offres.filter((o) => filter === 'tous' || o.type_offre === filter),
-    [offres, filter]
-  );
+  const parType = useMemo(() => offres.filter((o) => type === 'tous' || o.type_offre === type), [offres, type]);
+  const filtered = parType.filter((o) => (vue === 'actives' ? o.actif : !o.actif));
+  const nbActives = parType.filter((o) => o.actif).length;
+  const nbArchivees = parType.length - nbActives;
+
+  const modifier = async (o: Offre, data: { actif?: boolean; cloturee?: boolean }, succes: string) => {
+    setBusySlug(o.slug);
+    try {
+      const updated = await updateOffre(o.slug, data);
+      setOffres((list) => list.map((x) => (x.slug === o.slug ? updated : x)));
+      toast.success(succes);
+    } catch {
+      toast.error('Impossible de mettre à jour cette offre.');
+    } finally {
+      setBusySlug(null);
+    }
+  };
+
+  const cloturer = (o: Offre) => {
+    if (!window.confirm(`Clôturer « ${o.titre} » ? L’offre reste visible sur le site avec la mention « Offre clôturée », mais plus personne ne peut postuler.`)) return;
+    modifier(o, { cloturee: true }, 'Offre clôturée : les candidatures sont fermées.');
+  };
+
+  const archiver = (o: Offre) => {
+    if (!window.confirm(`Archiver « ${o.titre} » ? Elle disparaît du site public mais reste ici, dans l’onglet Archivées, avec ses candidatures.`)) return;
+    modifier(o, { actif: false }, 'Offre archivée : retirée du site.');
+  };
 
   const handleDelete = async (o: Offre) => {
-    if (!window.confirm(`Supprimer définitivement « ${o.titre} » ?`)) return;
+    if (!window.confirm(`Supprimer définitivement « ${o.titre} » ? Préférez l’archivage pour garder une trace de l’offre.`)) return;
     setBusySlug(o.slug);
     try {
       await deleteOffre(o.slug);
@@ -37,18 +73,6 @@ export default function OffresListPage() {
       toast.success('Offre supprimée.');
     } catch {
       toast.error('Impossible de supprimer cette offre.');
-    } finally {
-      setBusySlug(null);
-    }
-  };
-
-  const handleToggleActif = async (o: Offre) => {
-    setBusySlug(o.slug);
-    try {
-      const updated = await updateOffre(o.slug, { actif: !o.actif });
-      setOffres((list) => list.map((x) => (x.slug === o.slug ? updated : x)));
-    } catch {
-      toast.error('Impossible de mettre à jour cette offre.');
     } finally {
       setBusySlug(null);
     }
@@ -63,14 +87,14 @@ export default function OffresListPage() {
           <div className="flex gap-2">
             <Link
               href="/admin/offre/job"
-              className="btn-press text-white px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-2 hover:shadow-lg hover:-translate-y-0.5"
-              style={{ backgroundColor: 'var(--accent-primary)', boxShadow: 'var(--shadow-glow)' }}
+              className="btn-press flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-shadow hover:shadow-[var(--shadow-glow)]"
+              style={{ backgroundColor: 'var(--accent-primary)' }}
             >
               <span className="text-lg leading-none">+</span> Poste
             </Link>
             <Link
               href="/admin/offre/internship"
-              className="btn-press px-5 py-2.5 rounded-full text-sm font-medium border border-[var(--line)] transition-colors hover:border-[var(--accent-secondary)] hover:text-[var(--accent-secondary)] flex items-center gap-2"
+              className="btn-press flex items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-4 py-2.5 text-sm font-medium transition-colors hover:border-[var(--accent-secondary)] hover:text-[var(--accent-secondary)]"
             >
               <span className="text-lg leading-none">+</span> Stage
             </Link>
@@ -79,29 +103,45 @@ export default function OffresListPage() {
       />
 
       {!loading && offres.length > 0 && (
-        <div className="flex gap-2 mb-6">
-          {FILTERS.map((f) => {
-            const active = filter === f;
-            return (
+        <div className="mb-4 flex flex-col-reverse gap-3 border-b border-[var(--line)] sm:flex-row sm:items-end sm:justify-between">
+          <nav aria-label="Offres actives ou archivées" className="-mb-px flex gap-1">
+            {([['actives', 'Actives', nbActives], ['archivees', 'Archivées', nbArchivees]] as const).map(([v, label, n]) => {
+              const active = vue === v;
+              return (
+                <button
+                  key={v}
+                  type="button"
+                  aria-current={active ? 'page' : undefined}
+                  onClick={() => setVue(v)}
+                  className={`flex items-center gap-2 border-b-2 px-3.5 py-3 text-sm font-medium transition-colors ${
+                    active ? 'border-[var(--accent-primary)] text-[var(--accent-primary)]' : 'border-transparent text-[var(--ink-soft)] hover:text-[var(--ink)]'
+                  }`}
+                >
+                  {label}
+                  <span
+                    className="rounded-full px-2 py-0.5 text-[11px] font-semibold font-mono-num"
+                    style={active ? { background: 'var(--accent-primary)', color: '#fff' } : { background: 'var(--line)', color: 'var(--ink-soft)' }}
+                  >
+                    {n}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+          <div className="mb-3 flex gap-1.5">
+            {TYPES.map((t) => (
               <button
-                key={f}
+                key={t}
                 type="button"
-                onClick={() => setFilter(f)}
-                className="text-xs uppercase tracking-wider font-mono-num px-3 py-2 rounded-full border transition-all duration-200"
-                style={
-                  active
-                    ? {
-                        backgroundColor: 'var(--accent-primary)',
-                        color: '#fff',
-                        borderColor: 'transparent',
-                      }
-                    : { borderColor: 'var(--line)' }
-                }
+                onClick={() => setType(t)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                  type === t ? 'bg-[var(--ink)] text-white' : 'text-[var(--ink-soft)] hover:bg-[var(--line)]/60'
+                }`}
               >
-                {f === 'tous' ? 'Toutes' : f === 'emploi' ? 'Postes' : 'Stages'}
+                {t === 'tous' ? 'Tous types' : t === 'emploi' ? 'Postes' : 'Stages'}
               </button>
-            );
-          })}
+            ))}
+          </div>
         </div>
       )}
 
@@ -112,85 +152,96 @@ export default function OffresListPage() {
           ))}
         </div>
       ) : offres.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-[var(--line)] p-12 text-center bg-[var(--surface)]">
-          <p className="text-[var(--ink-soft)] text-sm mb-4">Aucune offre pour l&apos;instant.</p>
-          <div className="flex gap-2 justify-center">
-            <Link
-              href="/admin/offre/job"
-              className="inline-flex items-center gap-2 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
-              style={{ backgroundColor: 'var(--accent-primary)' }}
-            >
+        <div className="rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] p-12 text-center">
+          <p className="mb-4 text-sm text-[var(--ink-soft)]">Aucune offre pour l’instant.</p>
+          <div className="flex justify-center gap-2">
+            <Link href="/admin/offre/job" className="rounded-lg px-4 py-2.5 text-sm font-medium text-white" style={{ backgroundColor: 'var(--accent-primary)' }}>
               Créer un poste
             </Link>
-            <Link
-              href="/admin/offre/internship"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-[var(--line)] hover:border-[var(--accent-secondary)] hover:text-[var(--accent-secondary)] transition-colors"
-            >
+            <Link href="/admin/offre/internship" className="rounded-lg border border-[var(--line)] px-4 py-2.5 text-sm font-medium hover:border-[var(--accent-secondary)] hover:text-[var(--accent-secondary)]">
               Créer un stage
             </Link>
           </div>
         </div>
       ) : filtered.length === 0 ? (
-        <p className="text-sm text-[var(--ink-soft)]">Aucune offre dans cette catégorie.</p>
+        <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] px-6 py-10 text-center text-sm text-[var(--ink-soft)]">
+          {vue === 'archivees'
+            ? 'Aucune offre archivée. Une offre archivée disparaît du site mais reste consultable ici.'
+            : 'Aucune offre active dans cette catégorie.'}
+        </div>
       ) : (
-        <div className="rounded-2xl bg-[var(--surface)] border border-[var(--line)] overflow-hidden">
-          <div className="grid grid-cols-[1fr_100px_120px_90px_70px_36px] px-5 py-3 text-[11px] uppercase tracking-wider text-[var(--ink-soft)] border-b border-[var(--line)] font-mono-num">
+        <div className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface)]">
+          <div className={`${COLS} border-b border-[var(--line)] bg-[var(--paper)] px-5 py-3 text-xs font-medium text-[var(--ink-soft)]`}>
             <span>Titre</span>
             <span>Type</span>
             <span>Département</span>
             <span>Statut</span>
-            <span />
-            <span />
+            <span className="text-right">Actions</span>
           </div>
-          {filtered.map((o) => (
-            <div
-              key={o.slug}
-              className="grid grid-cols-[1fr_100px_120px_90px_70px_36px] px-5 py-4 items-center border-b border-[var(--line)] last:border-0"
-            >
-              <div className="min-w-0 pr-4">
-                <span className="font-medium text-sm block truncate">{o.titre}</span>
-                {o.type_offre === 'stage' && o.programme && (
-                  <span className="text-[11px] text-[var(--ink-soft)]">
-                    {o.programme === 'ete' ? "Stage d'été" : 'Stage PFE'}
+          {filtered.map((o) => {
+            const s = statutDe(o);
+            const busy = busySlug === o.slug;
+            return (
+              <div key={o.slug} className={`${COLS} items-center border-b border-[var(--line)] px-5 py-4 last:border-0`}>
+                <div className="min-w-0">
+                  <span className="block truncate text-sm font-medium">{o.titre}</span>
+                  <span className="text-xs text-[var(--ink-soft)]">
+                    {o.type_offre === 'stage' && o.programme ? (o.programme === 'ete' ? 'Stage d’été' : 'Stage PFE') : ''}
+                    {o.cloturee && o.cloturee_le && ` · clôturée le ${new Date(o.cloturee_le).toLocaleDateString('fr-FR')}`}
                   </span>
-                )}
+                </div>
+                <span className="text-sm">{o.type_offre === 'stage' ? 'Stage' : 'Poste'}</span>
+                <span className="truncate text-sm text-[var(--ink-soft)]">{o.departement || '—'}</span>
+                <span
+                  className="inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
+                  style={{ color: s.color, background: `color-mix(in srgb, ${s.color} 12%, transparent)` }}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: s.color }} />
+                  {s.label}
+                </span>
+                <div className="flex flex-wrap items-center justify-end gap-1.5">
+                  {o.actif && (
+                    <a href={`/public/carrieres/${o.slug}`} target="_blank" rel="noreferrer" className={btn}>
+                      Voir
+                    </a>
+                  )}
+                  {o.actif && !o.cloturee && (
+                    <button type="button" className={btn} disabled={busy} onClick={() => cloturer(o)}>
+                      Clôturer
+                    </button>
+                  )}
+                  {o.actif && o.cloturee && (
+                    <button type="button" className={btn} disabled={busy}
+                      onClick={() => modifier(o, { cloturee: false }, 'Offre rouverte : les candidatures sont de nouveau acceptées.')}>
+                      Rouvrir
+                    </button>
+                  )}
+                  {o.actif ? (
+                    <button type="button" className={btn} disabled={busy} onClick={() => archiver(o)}>
+                      Archiver
+                    </button>
+                  ) : (
+                    <button type="button" className={btn} disabled={busy}
+                      onClick={() => modifier(o, { actif: true }, 'Offre restaurée : de nouveau visible sur le site.')}>
+                      Restaurer
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(o)}
+                    disabled={busy}
+                    title="Supprimer définitivement"
+                    aria-label={`Supprimer ${o.titre}`}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--ink-soft)] transition-colors hover:bg-[var(--accent-brick)] hover:text-white disabled:opacity-40"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6h16zM10 11v6M14 11v6" />
+                    </svg>
+                  </button>
+                </div>
               </div>
-              <span className="text-sm capitalize">{o.type_offre}</span>
-              <span className="text-sm text-[var(--ink-soft)] truncate">{o.departement || '—'}</span>
-              <button
-                type="button"
-                onClick={() => handleToggleActif(o)}
-                disabled={busySlug === o.slug}
-                className="justify-self-start text-xs font-medium px-2.5 py-1 rounded-full transition-colors disabled:opacity-40"
-                style={
-                  o.actif
-                    ? { background: 'rgba(46,196,110,0.12)', color: 'var(--accent-sage)' }
-                    : { background: 'rgba(26,26,46,0.06)', color: 'var(--ink-soft)' }
-                }
-              >
-                {o.actif ? 'Publiée' : 'Masquée'}
-              </button>
-              <a
-                href={`/public/carrieres/${o.slug}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-[var(--ink-soft)] hover:text-[var(--accent-primary)] transition-colors"
-              >
-                Voir →
-              </a>
-              <button
-                type="button"
-                onClick={() => handleDelete(o)}
-                disabled={busySlug === o.slug}
-                title="Supprimer cette offre"
-                className="w-7 h-7 rounded-full flex items-center justify-center text-[var(--ink-soft)] hover:text-white hover:bg-[var(--accent-brick)] transition-colors disabled:opacity-40 justify-self-end"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6h16zM10 11v6M14 11v6" />
-                </svg>
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

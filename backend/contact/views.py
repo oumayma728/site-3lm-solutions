@@ -11,6 +11,9 @@ from .models import Contact
 from .serializers import ContactSerializer
 from django.core.mail import EmailMessage
 from django.conf import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ContactViewSet(viewsets.ModelViewSet):
@@ -41,7 +44,12 @@ class ContactViewSet(viewsets.ModelViewSet):
                 reply_to=[contact.email],
                 )
 
-        email.send()
+        # The message is already saved (visible in the admin): a mail server problem must not
+        # turn it into an error for the visitor.
+        try:
+            email.send()
+        except Exception:
+            logger.exception("Notification e-mail failed for contact %s", contact.pk)
 
 
 

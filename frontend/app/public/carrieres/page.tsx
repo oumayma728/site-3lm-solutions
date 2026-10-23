@@ -21,6 +21,7 @@ const fr = {
     open: (n: number) => `${n} poste${n > 1 ? 's' : ''} ouvert${n > 1 ? 's' : ''} en ce moment.`,
     details: 'Détails →',
     apply: 'Postuler →',
+    closed: 'Offre clôturée',
 };
 const T: Translations<typeof fr> = {
     fr,
@@ -33,6 +34,7 @@ const T: Translations<typeof fr> = {
         open: (n: number) => `${n} open position${n === 1 ? '' : 's'} right now.`,
         details: 'Details →',
         apply: 'Apply →',
+        closed: 'Applications closed',
     },
 };
 
@@ -53,7 +55,7 @@ export default async function CarrierePage() {
                 <section className="carriere-hero">
                     <span className="hero-badge"><span className="dot" />{t.badge}</span>
                     <h1>{t.h1[0]}<span className="gradient-text">{t.h1[1]}</span>{t.h1[2]}</h1>
-                    <p>{t.open(offres.length)}</p>
+                    <p>{t.open(offres.filter((o) => !o.cloturee).length)}</p>
                 </section>
 
                 <section className="jobs-section">
@@ -77,9 +79,13 @@ export default async function CarrierePage() {
                                         <Link href={`/public/carrieres/${o.slug}`} className="job-btn job-btn-ghost">
                                             {t.details}
                                         </Link>
-                                        <Link href={`/public/candidature?type=poste&ref=${o.slug}`} className="job-btn job-btn-fill">
-                                            {t.apply}
-                                        </Link>
+                                        {o.cloturee ? (
+                                            <span className="offre-closed-badge">{t.closed}</span>
+                                        ) : (
+                                            <Link href={`/public/candidature?type=poste&ref=${o.slug}`} className="job-btn job-btn-fill">
+                                                {t.apply}
+                                            </Link>
+                                        )}
                                     </div>
                                 </div>
                             </article>

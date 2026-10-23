@@ -17,6 +17,7 @@ const fr = {
     'De nouveaux sujets arrivent régulièrement. Vous pouvez aussi nous envoyer une candidature spontanée, on vous recontacte si un projet correspond à votre profil.',
   write: 'Nous écrire →',
   view: 'Voir l’offre',
+  closed: 'Offre clôturée',
 };
 const T: Translations<typeof fr> = {
   fr,
@@ -28,6 +29,7 @@ const T: Translations<typeof fr> = {
       'New topics come up regularly. You can also send us an open application — we’ll get back to you if a project matches your profile.',
     write: 'Write to us →',
     view: 'View offer',
+    closed: 'Applications closed',
   },
 };
 
@@ -37,8 +39,12 @@ export default function ProgramSwitcher({ offres }: { offres: Offre[] }) {
   const programmes = programmesByLang[lang];
   const [active, setActive] = useState<Programme>('ete');
   const info = programmes[active];
-  const filtered = offres.filter((o) => o.programme === active);
-  const countFor = (key: Programme) => offres.filter((o) => o.programme === key).length;
+  // Open offers first; closed ones stay listed (marked) after them
+  const filtered = offres
+    .filter((o) => o.programme === active)
+    .sort((a, b) => Number(a.cloturee) - Number(b.cloturee));
+  const openCount = filtered.filter((o) => !o.cloturee).length;
+  const countFor = (key: Programme) => offres.filter((o) => o.programme === key && !o.cloturee).length;
 
   return (
     <>
@@ -59,7 +65,7 @@ export default function ProgramSwitcher({ offres }: { offres: Offre[] }) {
       <div className="prog-card">
         <div className="prog-card-meta">
           <span><small>{t.duration}</small>{info.duree}</span>
-          <span><small>{t.open}</small>{filtered.length}</span>
+          <span><small>{t.open}</small>{openCount}</span>
         </div>
         <p>{info.texte}</p>
       </div>
@@ -76,13 +82,15 @@ export default function ProgramSwitcher({ offres }: { offres: Offre[] }) {
             const extraSkills = o.skills.length - MAX_SKILLS;
             return (
               <article
-                className="offre-card"
+                className={`offre-card${o.cloturee ? ' is-closed' : ''}`}
                 key={o.slug}
                 style={{ '--accent': accentFor(o.departement) } as CSSProperties}
               >
                 <div className="offre-top">
                   <span className="offre-domaine">{o.departement}</span>
-                  <span className="offre-duree">{info.duree}</span>
+                  {o.cloturee
+                    ? <span className="offre-closed-badge">{t.closed}</span>
+                    : <span className="offre-duree">{info.duree}</span>}
                 </div>
 
                 <h3>

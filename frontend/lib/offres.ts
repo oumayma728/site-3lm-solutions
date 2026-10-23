@@ -16,7 +16,9 @@ export type Offre = {
   qualifications: string[];
   benefits: string[];
   skills: string[];
-  actif: boolean;
+  actif: boolean; // false = archived: hidden from the public site, kept in the admin
+  cloturee: boolean; // still shown publicly as "Offre clôturée", but applications are refused
+  cloturee_le: string | null;
 };
 
 export async function getOffres(type: 'emploi' | 'stage'): Promise<Offre[]> {
@@ -67,7 +69,7 @@ export async function createOffre(data: OffreInput): Promise<Offre> {
   return res.data;
 }
 
-export async function updateOffre(slug: string, data: Partial<OffreInput>): Promise<Offre> {
+export async function updateOffre(slug: string, data: Partial<OffreInput> & { cloturee?: boolean }): Promise<Offre> {
   const res = await api.patch(`/offres/${slug}/`, data);
   return res.data;
 }

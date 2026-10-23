@@ -43,6 +43,10 @@ const fr = {
   question: (isStage: boolean): string => (isStage ? 'Une question sur ce stage ?' : 'Une question sur ce poste ?'),
   questionText: 'Contactez-nous, nous répondons rapidement à toute question sur nos offres.',
   call: 'Programmer un appel →',
+  closedBadge: 'Offre clôturée',
+  closedTitle: 'Cette offre est clôturée',
+  closedText: 'Elle n’accepte plus de candidatures. Découvrez nos autres offres ou envoyez-nous une candidature spontanée.',
+  seeOthers: (isStage: boolean): string => (isStage ? 'Voir les stages ouverts →' : 'Voir les postes ouverts →'),
 };
 const T: Translations<typeof fr> = {
   fr,
@@ -76,6 +80,10 @@ const T: Translations<typeof fr> = {
     question: (isStage: boolean): string => (isStage ? 'A question about this internship?' : 'A question about this role?'),
     questionText: 'Contact us — we answer any question about our openings quickly.',
     call: 'Schedule a call →',
+    closedBadge: 'Applications closed',
+    closedTitle: 'This offer is closed',
+    closedText: 'It no longer accepts applications. Browse our other openings or send us an open application.',
+    seeOthers: (isStage: boolean): string => (isStage ? 'See open internships →' : 'See open positions →'),
   },
 };
 
@@ -150,7 +158,11 @@ export default async function OffreDetailsPage({ params }: { params: Promise<{ s
             {programme && <span>📅 {programme.duree}</span>}
             {!isStage && offre.experience && <span>⏱️ {offre.experience}</span>}
           </div>
-          <Link href={applyHref} className="gradient-button">{t.applyNow}</Link>
+          {offre.cloturee ? (
+            <span className="offre-closed-pill">{t.closedBadge}</span>
+          ) : (
+            <Link href={applyHref} className="gradient-button">{t.applyNow}</Link>
+          )}
         </section>
 
         {summary.length > 0 && (
@@ -195,13 +207,23 @@ export default async function OffreDetailsPage({ params }: { params: Promise<{ s
             </div>
           )}
 
-          <div className="offre-apply-card">
-            <div>
-              <h2>{t.fits(isStage)}</h2>
-              <p>{t.fitsText}</p>
+          {offre.cloturee ? (
+            <div className="offre-apply-card is-closed">
+              <div>
+                <h2>{t.closedTitle}</h2>
+                <p>{t.closedText}</p>
+              </div>
+              <Link href={backHref} className="gradient-button">{t.seeOthers(isStage)}</Link>
             </div>
-            <Link href={applyHref} className="gradient-button">{t.apply}</Link>
-          </div>
+          ) : (
+            <div className="offre-apply-card">
+              <div>
+                <h2>{t.fits(isStage)}</h2>
+                <p>{t.fitsText}</p>
+              </div>
+              <Link href={applyHref} className="gradient-button">{t.apply}</Link>
+            </div>
+          )}
         </section>
 
         {autres.length > 0 && (

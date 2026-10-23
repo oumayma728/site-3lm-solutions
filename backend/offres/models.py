@@ -27,7 +27,11 @@ class Offre(models.Model):
     qualifications = models.JSONField(default=list, blank=True)
     benefits = models.JSONField(default=list, blank=True)
     skills = models.JSONField(default=list, blank=True)
+    # actif=False: archived — hidden from the public site, kept in the admin.
+    # cloturee=True: still shown publicly as "Offre clôturée", but no longer accepts applications.
     actif = models.BooleanField(default=True)
+    cloturee = models.BooleanField(default=False)
+    cloturee_le = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

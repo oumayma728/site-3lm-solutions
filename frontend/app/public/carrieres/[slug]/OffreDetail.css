@@ -32,6 +32,10 @@
 .offre-apply-card h2{margin:0 0 .4rem}
 .offre-apply-card p{margin:0}
 .offre-apply-card .gradient-button{flex-shrink:0}
+/* Closed offer: amber notice instead of the "apply" call to action */
+.offre-apply-card.is-closed{border-color:rgba(245,158,11,.35);background:linear-gradient(150deg, rgba(245,158,11,.10), transparent 70%)}
+.offre-closed-pill{display:inline-flex;align-items:center;gap:.45rem;padding:.6rem 1.1rem;border-radius:999px;font-weight:700;font-size:.85rem;color:#f59e0b;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35)}
+.offre-closed-pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
 
 .offre-others{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:1rem 1.5rem 5rem;border-top:1px solid var(--line);padding-top:3rem}
 .offre-others .jobs-list{margin-top:1.5rem}

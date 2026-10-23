@@ -30,6 +30,9 @@ const fr = {
   offreErrorText: 'Elle n’est peut-être plus disponible, ou le service est momentanément inaccessible.',
   retry: 'Réessayer',
   spontaneous: 'Envoyer une candidature spontanée',
+  closedTitle: 'Cette offre est clôturée.',
+  closedText: 'Elle n’accepte plus de candidatures.',
+  otherOffers: '← Voir les autres offres',
   s1: 'Vos informations',
   name: 'Nom',
   namePh: 'Votre nom',
@@ -79,6 +82,9 @@ const T: Translations<typeof fr> = {
     offreErrorText: 'It may no longer be available, or the service is temporarily unreachable.',
     retry: 'Try again',
     spontaneous: 'Send an open application',
+    closedTitle: 'This offer is closed.',
+    closedText: 'It no longer accepts applications.',
+    otherOffers: '← See other openings',
     s1: 'Your details',
     name: 'Name',
     namePh: 'Your name',
@@ -145,7 +151,7 @@ function useOffreContext(labels: OffreLabels) {
     return { offreContext: null, offreLoading, offreError, retry };
   }
   return {
-    offreContext: { id: offre.id, label: offreLabel(offre, labels), titre: offre.titre , idZ: offre.id, isStage: offre.type_offre === 'stage' },
+    offreContext: { id: offre.id, label: offreLabel(offre, labels), titre: offre.titre , idZ: offre.id, isStage: offre.type_offre === 'stage', cloturee: offre.cloturee },
     offreLoading,
     offreError,
     retry,
@@ -251,6 +257,18 @@ export default function CandidatureForm() {
           </p>
           <div className="candidature-offre-error-actions">
             <button type="button" onClick={retry}>{t.retry}</button>
+            <a href="/public/candidature">{t.spontaneous}</a>
+          </div>
+        </div>
+      )}
+
+      {offreContext?.cloturee && (
+        <div className="candidature-error candidature-offre-error" role="alert">
+          <p>
+            <strong>{t.closedTitle}</strong> {t.closedText}
+          </p>
+          <div className="candidature-offre-error-actions">
+            <a href={offreContext.isStage ? '/public/stages' : '/public/carrieres'}>{t.otherOffers}</a>
             <a href="/public/candidature">{t.spontaneous}</a>
           </div>
         </div>
@@ -379,7 +397,7 @@ export default function CandidatureForm() {
         </span>
       </label>
 
-      <button type="submit" className="candidature-submit" disabled={loading || offreLoading || offreError || !consentement}>
+      <button type="submit" className="candidature-submit" disabled={loading || offreLoading || offreError || !consentement || !!offreContext?.cloturee}>
         {loading ? t.sending : offreLoading ? t.loadingOffre : t.submit}
       </button>
     </form>
