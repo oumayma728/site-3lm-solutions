@@ -205,3 +205,5 @@
         width: 100%
     }
 }
+/* Closed job: shown instead of the Apply button */
+.offre-closed-badge{display:inline-flex;align-items:center;font-size:.75rem;font-weight:700;white-space:nowrap;padding:.4rem .8rem;border-radius:999px;color:#f59e0b;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3)}

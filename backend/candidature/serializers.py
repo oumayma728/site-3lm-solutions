@@ -64,6 +64,11 @@ class CandidatureSerializer(serializers.ModelSerializer):
     def validate_offre(self, value):
         if value and not value.actif:
             raise serializers.ValidationError("L'offre sélectionnée n'est pas active.")
+        # Closed offer: no new applications (existing ones can still be edited by the team)
+        if value and value.cloturee and not self.instance:
+            raise serializers.ValidationError(
+                "Cette offre est clôturée : elle n'accepte plus de candidatures."
+            )
         return value
     def validate_telephone(self, value):
         value = value.strip()  # Supprimer les espaces avant et après

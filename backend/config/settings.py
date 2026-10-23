@@ -185,6 +185,10 @@ EMAIL_PORT = int(os.getenv('EMAIL_PORT',"465"))
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER',"contact@3lmsolutions.net")
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'true').lower() == 'true'
+# Without a timeout, an unreachable mail server (e.g. a host that blocks outgoing SMTP) makes
+# the request hang until gunicorn kills the worker: the visitor gets an error even though
+# their application / message was saved. Fail after a few seconds instead (errors are caught).
+EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', '10'))
 
 # CRM (internship management tool): accepted candidatures are sent there for analysis.
 # CRM_API_KEY must equal the CRM's CANDIDATES_API_KEY.
