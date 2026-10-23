@@ -9,7 +9,7 @@ import '@/components/site/tokens.css';
 import '@/components/site/Home.css';
 import '../Expertise.css';
 import './ExpertiseDetail.css';
-import { getServices, getServiceBySlug, serviceSlugs } from '../serviceData';
+import { getServices, getServiceBySlug } from '../serviceData';
 import { serviceIcons } from '../serviceIcons';
 
 const fr = {
@@ -34,9 +34,9 @@ const T: Translations<typeof fr> = {
   },
 };
 
-export function generateStaticParams() {
-  return serviceSlugs.map((slug) => ({ slug }));
-}
+// Rendered on every request, in the visitor's language (language cookie). Prerendering these
+// pages at build time would freeze them in one language.
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
