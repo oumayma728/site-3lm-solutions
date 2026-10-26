@@ -7,6 +7,7 @@ import { Client, StatutClient } from '@/lib/types';
 import { STATUT_CLIENT_CONFIG } from '@/lib/statusClient';
 import PageHeader from '@/components/PageHeader';
 import { useToast } from '@/components/ToastProvider';
+import { Pagination, usePagination } from '@/components/Pagination';
 
 const STATUT_FILTERS = ['tous', ...Object.keys(STATUT_CLIENT_CONFIG)] as const;
 
@@ -39,6 +40,8 @@ export default function ProspectsPage() {
       return matchSearch && matchStatut;
     });
   }, [list, search, statutFilter]);
+
+  const pager = usePagination(filtered, `${search}|${statutFilter}`);
 
   const stats = useMemo(() => {
     const nouveau = list.filter((c) => c.statut === 'nouveau').length;
@@ -155,7 +158,7 @@ export default function ProspectsPage() {
             <span>Statut</span>
             <span />
           </div>
-          {filtered.map((c, i) => (
+          {pager.pageItems.map((c, i) => (
             <div
               key={c.id}
               className="row-in grid grid-cols-[1fr_180px_160px_36px] px-5 py-4 items-center border-b border-[var(--line)] last:border-0 transition-colors hover:bg-[rgba(108,92,231,0.04)]"
@@ -210,6 +213,8 @@ export default function ProspectsPage() {
           ))}
         </div>
       )}
+
+      {!loading && <Pagination {...pager} label="prospects" />}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { getAllOffresAdmin, deleteOffre, updateOffre, type Offre } from '@/lib/offres';
 import PageHeader from '@/components/PageHeader';
 import { useToast } from '@/components/ToastProvider';
+import { Pagination, usePagination } from '@/components/Pagination';
 
 type Vue = 'actives' | 'archivees';
 const TYPES = ['tous', 'emploi', 'stage'] as const;
@@ -40,6 +41,7 @@ export default function OffresListPage() {
   const filtered = parType.filter((o) => (vue === 'actives' ? o.actif : !o.actif));
   const nbActives = parType.filter((o) => o.actif).length;
   const nbArchivees = parType.length - nbActives;
+  const pager = usePagination(filtered, `${vue}|${type}`);
 
   const modifier = async (o: Offre, data: { actif?: boolean; cloturee?: boolean }, succes: string) => {
     setBusySlug(o.slug);
@@ -178,7 +180,7 @@ export default function OffresListPage() {
             <span>Statut</span>
             <span className="text-right">Actions</span>
           </div>
-          {filtered.map((o) => {
+          {pager.pageItems.map((o) => {
             const s = statutDe(o);
             const busy = busySlug === o.slug;
             return (
@@ -244,6 +246,8 @@ export default function OffresListPage() {
           })}
         </div>
       )}
+
+      {!loading && <Pagination {...pager} label="offres" />}
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import PageHeader from '@/components/PageHeader';
 import { useToast } from '@/components/ToastProvider';
+import { Pagination, usePagination } from '@/components/Pagination';
 import {
   createCompte, getComptes, getMoi, messageErreur, updateCompte,
   type Compte, type Moi,
@@ -129,6 +130,8 @@ export default function ComptesPage() {
     }
   };
 
+  const pager = usePagination(comptes);
+
   if (!loading && moi && !moi.is_superuser) {
     return (
       <div className="mx-auto w-full max-w-4xl px-8 py-10">
@@ -234,7 +237,7 @@ export default function ComptesPage() {
             <span>{actifs} actif{actifs > 1 ? 's' : ''}</span>
           </div>
 
-          {comptes.map((c) => {
+          {pager.pageItems.map((c) => {
             const estMoi = c.id === moi?.id;
             const occupe = actionId === c.id;
             return (
@@ -326,6 +329,8 @@ export default function ComptesPage() {
           })}
         </div>
       )}
+
+      {!loading && <Pagination {...pager} label="comptes" />}
     </div>
   );
 }

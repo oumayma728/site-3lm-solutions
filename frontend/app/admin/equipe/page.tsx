@@ -11,6 +11,7 @@ import {
 
 import PageHeader from '@/components/PageHeader';
 import { useToast } from '@/components/ToastProvider';
+import { Pagination, usePagination } from '@/components/Pagination';
 
 export default function EquipeListPage() {
     const toast = useToast();
@@ -41,6 +42,8 @@ export default function EquipeListPage() {
             employee.profil?.toLowerCase().includes(query)
         );
     });
+
+    const pager = usePagination(filteredEquipes, search);
 
     return (
         <div className="mx-auto w-full max-w-7xl px-8 py-10">
@@ -140,7 +143,7 @@ export default function EquipeListPage() {
                         <span></span>
                     </div>
 
-                    {filteredEquipes.map((employee) => (
+                    {pager.pageItems.map((employee) => (
                         <Link
                             key={employee.id}
                             href={`/admin/equipe/${employee.id}`}
@@ -190,6 +193,8 @@ export default function EquipeListPage() {
                     ))}
                 </div>
             )}
+
+            {!loading && <Pagination {...pager} label="employés" />}
         </div>
     );
 }
