@@ -9,6 +9,7 @@ import PageHeader from '@/components/PageHeader';
 import StatusBadge from '@/components/StatusBadge';
 import { formatMontant, deleteDevis } from '@/lib/devis';
 import { useToast } from '@/components/ToastProvider';
+import { Pagination, usePagination } from '@/components/Pagination';
 
 const STATUT_FILTERS = ['tous', ...Object.keys(STATUT_CONFIG)];
 
@@ -73,6 +74,8 @@ export default function DevisListPage() {
     () => matching.filter((d) => statutFilter === 'tous' || d.statut === statutFilter),
     [matching, statutFilter]
   );
+
+  const pager = usePagination(filtered, `${search}|${statutFilter}`);
 
   const stats = useMemo(() => {
     const enCours = devisList.filter((d) => d.statut === 'brouillon' || d.statut === 'en_attente');
@@ -187,7 +190,7 @@ export default function DevisListPage() {
             <span>Créé le</span>
             <span />
           </div>
-          {filtered.map((devis, i) => (
+          {pager.pageItems.map((devis, i) => (
             <Link
               key={devis.id}
               href={`/admin/devis/${devis.id}`}
@@ -231,6 +234,8 @@ export default function DevisListPage() {
           ))}
         </div>
       )}
+
+      {!loading && <Pagination {...pager} label="devis" />}
     </div>
   );
 }

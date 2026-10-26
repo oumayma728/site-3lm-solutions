@@ -8,6 +8,7 @@ import {
 
 import PageHeader from '@/components/PageHeader';
 import { useToast } from '@/components/ToastProvider';
+import { Pagination, usePagination } from '@/components/Pagination';
 
 const TYPE_STAGE_LABELS: Record<string, string> = {
   pfe: 'Stage PFE',
@@ -236,6 +237,12 @@ export default function CandidaturesListPage() {
   });
 
   const filteredCandidatures = matchingCandidatures.filter((c) => matchesStatut(c, envoi));
+
+  // Pages only change what is displayed: "select all" and the counts still cover every page
+  const pager = usePagination(
+    filteredCandidatures,
+    [search, poste, niveaux.join(','), range?.join('~') ?? '', envoi].join('|'),
+  );
 
   // ── Bulk send ──
   // "Select all" picks the visible candidatures the CRM has not received yet. Anything hidden by a
@@ -555,7 +562,7 @@ export default function CandidaturesListPage() {
         </div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
-          {filteredCandidatures.map((c) => (
+          {pager.pageItems.map((c) => (
             <article
               key={c.id}
               role="button"
@@ -723,6 +730,8 @@ export default function CandidaturesListPage() {
           ))}
         </div>
       )}
+
+      {!loading && <Pagination {...pager} label="candidatures" />}
 
       {/* Candidate detail drawer */}
       {selectedCandidature && (

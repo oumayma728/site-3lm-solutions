@@ -14,6 +14,7 @@ import { STATUT_RDV_CONFIG, TYPE_RDV_CONFIG } from '@/lib/statusRdv';
 import PageHeader from '@/components/PageHeader';
 import RdvStatusBadge from '@/components/RdvStatusBadge';
 import { useToast } from '@/components/ToastProvider';
+import { Pagination, usePagination } from '@/components/Pagination';
 
 const STATUT_FILTERS = ['tous', ...Object.keys(STATUT_RDV_CONFIG)] as const;
 
@@ -112,6 +113,7 @@ interface SectionProps {
   hint: string;
   badgeColor: string;
   items: RendezVous[];
+  resetKey: string; // search + status filter: back to page 1 when they change
   busyId: number | null;
   onConfirmer: (id: number) => void;
   onAnnuler: (id: number) => void;
@@ -119,7 +121,9 @@ interface SectionProps {
   onDelete: (id: number, nom?: string) => void;
 }
 
-function RendezVousSection({ title, hint, badgeColor, items, busyId, ...actions }: SectionProps) {
+function RendezVousSection({ title, hint, badgeColor, items, resetKey, busyId, ...actions }: SectionProps) {
+  // Each section (client requests / team proposals) has its own pages
+  const pager = usePagination(items, resetKey);
   return (
     <div className="mb-8">
       <div className="flex items-center gap-2 mb-3">
@@ -135,11 +139,12 @@ function RendezVousSection({ title, hint, badgeColor, items, busyId, ...actions 
         </div>
       ) : (
         <div className="rounded-2xl bg-[var(--surface)] border border-[var(--line)] overflow-hidden">
-          {items.map((rdv, i) => (
+          {pager.pageItems.map((rdv, i) => (
             <RendezVousRow key={rdv.id} rdv={rdv} busy={busyId === rdv.id} index={i} {...actions} />
           ))}
         </div>
       )}
+      <Pagination {...pager} label="rendez-vous" />
     </div>
   );
 }
@@ -351,6 +356,7 @@ export default function RendezVousListPage() {
             hint="Reçues via le formulaire public du site — à confirmer après vérification du créneau."
             badgeColor="var(--accent-secondary)"
             items={demandesClients}
+            resetKey={`${search}|${statutFilter}`}
             busyId={busyId}
             {...rowActions}
           />
@@ -359,6 +365,7 @@ export default function RendezVousListPage() {
             hint="Créneaux proposés par un commercial (suite à un appel ou après l'envoi d'un devis)."
             badgeColor="var(--ink-soft)"
             items={propositionsEquipe}
+            resetKey={`${search}|${statutFilter}`}
             busyId={busyId}
             {...rowActions}
           />
