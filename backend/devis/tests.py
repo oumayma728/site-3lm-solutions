@@ -193,14 +193,15 @@ class GenerationIATests(TestCase):
     def appels(self):
         return [c.kwargs for c in self.client_api.messages.create.call_args_list]
 
-    def test_appel_outil_force_strict_temperature_basse(self):
+    def test_appel_outil_force_strict_sans_temperature(self):
         self.creer(reponse_outil(proposition()))
         resultat = ia.generer_devis_ia('Un site vitrine', 'ACME')
         appel = self.appels()[0]
         self.assertEqual(appel['model'], 'modele-de-test')               # ANTHROPIC_MODEL
         self.assertEqual(appel['tool_choice'], {'type': 'tool', 'name': ia.NOM_OUTIL})
         self.assertTrue(appel['tools'][0]['strict'])
-        self.assertLessEqual(appel['temperature'], 0.3)
+        # le SDK anthropic 1.x lève TypeError sur `temperature` : ne jamais la passer
+        self.assertNotIn('temperature', appel)
         self.assertEqual(resultat['lignes'][1]['jours_par_personne'], D('5.0'))
         self.assertEqual((resultat['tentatives'], resultat['version_prompt']), (1, ia.VERSION_PROMPT))
 
@@ -265,13 +266,11 @@ class GenerationIATests(TestCase):
         reponse_400 = httpx.Response(400, request=requete_http())
         self.creer(
             anthropic.BadRequestError("tool_choice: type 'tool' is not supported for this model.", response=reponse_400, body=None),
-            anthropic.BadRequestError("temperature is not supported for this model.", response=reponse_400, body=None),
             reponse_outil(proposition()),
         )
         ia.generer_devis_ia('Besoins', 'ACME')
         dernier = self.appels()[-1]
         self.assertEqual(dernier['tool_choice'], {'type': 'auto'})
-        self.assertNotIn('temperature', dernier)
         self.assertTrue(dernier['tools'][0]['strict'])   # seul le paramètre refusé est abandonné
 
     def test_erreurs_api_traduites(self):

@@ -16,12 +16,12 @@ const fr = {
   lead: '3LM Solutions accompagne les entreprises européennes avec une équipe technique basée à Ariana, en Tunisie. Une collaboration de proximité, une communication fluide et des horaires de travail adaptés à vos besoins.',
   discuss: 'Discuter de mon projet →',
   floats: ['🇹🇳 Ariana', '🇪🇺 Vos bureaux', 'Même journée de travail'],
-  stats: ['Fuseau horaire aligné', 'Équipe 100% francophone', 'Délai de réponse garanti'],
+  stats: ['Fuseau horaire aligné', 'Équipe francophone et anglophone', 'Délai de réponse garanti'],
   statement: ['Une équipe technique ', 'basée en Tunisie', ', qui travaille ', 'comme si elle était chez vous', '.'],
   whyMarker: 'Pourquoi 3LM',
   bento: [
     ['Horaires alignés', 'Nous travaillons sur vos horaires de travail européens. Pas de décalage à gérer, pas d’attente jusqu’au lendemain pour une réponse — les échanges se font en temps réel, comme avec une équipe sur place.'],
-    ['Équipe francophone', 'Communication directe, sans barrière de langue ni intermédiaire.'],
+    ['Équipe francophone et anglophone', 'Nous travaillons en français comme en anglais : une communication directe, sans barrière de langue ni intermédiaire.'],
     ['Coûts maîtrisés', 'Une expertise de qualité, pour un budget plus accessible qu’une équipe interne en Europe.'],
     ['Qualité constante', 'Méthodologie agile, livrables réguliers, suivi rigoureux — une équipe stable, sans rotation constante de profils.'],
   ] as [string, string][],
@@ -51,12 +51,12 @@ const T: Translations<typeof fr> = {
     lead: '3LM Solutions supports European companies with a technical team based in Ariana, Tunisia. A close collaboration, smooth communication and working hours that fit your needs.',
     discuss: 'Discuss my project →',
     floats: ['🇹🇳 Ariana', '🇪🇺 Your offices', 'Same working day'],
-    stats: ['Aligned time zone', '100% French-speaking team', 'Guaranteed response time'],
+    stats: ['Aligned time zone', 'French- and English-speaking team', 'Guaranteed response time'],
     statement: ['A technical team ', 'based in Tunisia', ', working ', 'as if it were in your office', '.'],
     whyMarker: 'Why 3LM',
     bento: [
       ['Aligned hours', 'We work on your European business hours. No time difference to manage, no waiting until the next day for an answer — conversations happen in real time, just like with an on-site team.'],
-      ['French-speaking team', 'Direct communication, with no language barrier and no middleman.'],
+      ['French- and English-speaking team', 'We work in French and in English: direct communication, with no language barrier and no middleman.'],
       ['Controlled costs', 'Quality expertise at a more accessible budget than an in-house team in Europe.'],
       ['Consistent quality', 'Agile methodology, regular deliverables, rigorous follow-up — a stable team, without constant turnover.'],
     ],
@@ -88,7 +88,7 @@ const STAT_ICONS = [
   <svg key="s2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>,
   <svg key="s3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" /></svg>,
 ];
-const STAT_NUMS = ['GMT+1', 'FR', '<24h'];
+const STAT_NUMS = ['GMT+1', 'FR · EN', '<24h'];
 const BENTO_CLASSES = ['bento-card bento-large', 'bento-card', 'bento-card', 'bento-card bento-wide'];
 
 export default async function NearshorePage() {

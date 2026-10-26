@@ -270,6 +270,7 @@ export default function CandidaturesListPage() {
     if (!window.confirm(`Accepter ${ids.length} candidature(s) et les envoyer au CRM pour analyse ?`)) return;
 
     const sent = new Set<number>();
+    let lastError = ''; // the CRM's reason, shown with the summary (e.g. "Le CRM est injoignable")
     let inARow = 0;
     let done = 0;
     setBulk({ done: 0, total: ids.length });
@@ -281,9 +282,11 @@ export default function CandidaturesListPage() {
           sent.add(id);
           inARow = 0;
         } else {
+          lastError = res.message;
           inARow++;
         }
       } catch {
+        lastError = 'Erreur du serveur du site.';
         inARow++;
       }
       done++;
@@ -297,7 +300,7 @@ export default function CandidaturesListPage() {
     setBulk(null);
     setSelection(new Set(ids.filter((id) => !sent.has(id)))); // keep the ones to retry selected
     if (sent.size === ids.length) toast.success(`${sent.size} candidature(s) envoyée(s) au CRM.`);
-    else toast.error(`${sent.size} envoyée(s) au CRM, ${ids.length - sent.size} à renvoyer.`);
+    else toast.error(`${sent.size} envoyée(s) au CRM, ${ids.length - sent.size} à renvoyer.${lastError ? ` ${lastError}` : ''}`);
   }
 
   return (

@@ -26,7 +26,9 @@ logger = logging.getLogger(__name__)
 
 VERSION_PROMPT = '2026-10-20.1'   # à incrémenter à chaque modification du prompt ou du schéma
 NOM_OUTIL = 'proposer_devis'
-TEMPERATURE = 0.2                  # estimations stables d'une génération à l'autre
+# Pas de `temperature` : le SDK anthropic 1.x ne l'accepte plus (TypeError avant même
+# l'appel) et les modèles récents la refusent. La stabilité vient de l'outil forcé et
+# de la validation de la réponse.
 MAX_TOKENS = 4096
 MAX_TOKENS_RELANCE = 8192          # la relance après une réponse tronquée a plus de place
 TENTATIVES = 2                     # 1 essai + 1 relance
@@ -272,16 +274,16 @@ def valider_reponse(donnees, effectifs: Counter) -> tuple[dict, list[str]]:
 # ---------------------------------------------------------------------------
 
 # Capacités de chaque modèle, apprises au premier refus de l'API : les modèles
-# récents refusent l'appel d'outil forcé et/ou la température, et le mode
-# strict n'existe pas sur tous. On n'abandonne QUE le paramètre refusé — la
-# validation ci-dessus garantit la qualité de la réponse dans tous les cas.
+# récents refusent l'appel d'outil forcé, et le mode strict n'existe pas sur
+# tous. On n'abandonne QUE le paramètre refusé — la validation ci-dessus
+# garantit la qualité de la réponse dans tous les cas.
 _capacites_par_modele: dict[str, dict[str, bool]] = {}
-_PARAMETRES_AJUSTABLES = (('forcer_outil', 'tool_choice'), ('temperature', 'temperature'), ('strict', 'strict'))
+_PARAMETRES_AJUSTABLES = (('forcer_outil', 'tool_choice'), ('strict', 'strict'))
 
 
 def _appeler(client: anthropic.Anthropic, modele: str, messages: list, max_tokens: int):
     capacites = _capacites_par_modele.setdefault(
-        modele, {'forcer_outil': True, 'temperature': True, 'strict': True},
+        modele, {'forcer_outil': True, 'strict': True},
     )
     while True:
         outil = {**OUTIL, 'strict': True} if capacites['strict'] else OUTIL
@@ -293,8 +295,6 @@ def _appeler(client: anthropic.Anthropic, modele: str, messages: list, max_token
             'tools': [outil],
             'tool_choice': {'type': 'tool', 'name': NOM_OUTIL} if capacites['forcer_outil'] else {'type': 'auto'},
         }
-        if capacites['temperature']:
-            params['temperature'] = TEMPERATURE
         try:
             return client.messages.create(**params)
         except anthropic.BadRequestError as exc:
