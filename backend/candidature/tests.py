@@ -174,6 +174,90 @@ class AccepterCandidatureTests(APITestCase):
         self.assertIsNone(created.crm_envoye_le)
 
 
+@override_settings(MEDIA_ROOT=MEDIA, CRM_API_URL='http://crm.test/', CRM_API_KEY='secret-key',
+                   EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend', DEFAULT_FROM_EMAIL='contact@test.tn')
+class DecisionEtEmailsTests(APITestCase):
+    """Refusing from the site, and the e-mails the candidate receives."""
+
+    def setUp(self):
+        from django.core import mail
+        self.outbox = mail.outbox
+        self.admin = get_user_model().objects.create_user('rh-decision', password='x')
+        self.offre = Offre.objects.create(titre='Internship AI', type_offre='stage', programme='pfe', description='d')
+        self.c = Candidature.objects.create(nom='Sami', email='sami@example.com', telephone='20000000', offre=self.offre)
+        self.client.force_authenticate(self.admin)
+
+    def accepter(self):
+        return self.client.post(f'/api/candidature/{self.c.id}/accepter/')
+
+    def refuser(self, **data):
+        return self.client.post(f'/api/candidature/{self.c.id}/refuser/', data, format='json')
+
+    @patch('candidature.crm.requests.post', return_value=crm_response(201))
+    def test_under_review_email_is_sent_once_when_the_crm_receives_it(self, post):
+        r = self.accepter()
+        self.assertIn('en cours d', r.data['message'])
+        self.assertEqual(len(self.outbox), 1)
+        self.assertEqual(self.outbox[0].to, ['sami@example.com'])
+        self.assertIn("en cours d'examen", self.outbox[0].subject)
+        self.assertIn('Internship AI', self.outbox[0].body)
+        self.accepter()                               # re-send to update the CRM: no second e-mail
+        self.assertEqual(len(self.outbox), 1)
+        self.c.refresh_from_db()
+        self.assertIsNotNone(self.c.email_examen_envoye_le)
+
+    @patch('candidature.crm.requests.post', return_value=crm_response(503))
+    def test_no_email_while_the_crm_has_not_received_it(self, post):
+        self.accepter()
+        self.assertEqual(self.outbox, [])
+
+    def test_refusal_sends_the_email_and_hides_nothing_internal(self):
+        r = self.refuser()
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.data['email_envoye'])
+        self.c.refresh_from_db()
+        self.assertEqual(self.c.statut, 'refusee')
+        self.assertIsNotNone(self.c.refusee_le)
+        self.assertIsNotNone(self.c.email_refus_envoye_le)
+        self.assertEqual(self.outbox[0].subject, 'Votre candidature chez 3LM Solutions')
+        self.assertIn('pas en mesure de donner suite', self.outbox[0].body)
+
+    def test_refusal_without_email(self):
+        r = self.refuser(envoyer_email=False)
+        self.assertFalse(r.data['email_envoye'])
+        self.assertEqual(self.outbox, [])
+        self.c.refresh_from_db()
+        self.assertEqual(self.c.statut, 'refusee')
+        self.assertIsNone(self.c.email_refus_envoye_le)
+
+    def test_mail_failure_does_not_undo_the_refusal(self):
+        with patch('django.core.mail.EmailMessage.send', side_effect=OSError('smtp down')):
+            r = self.refuser()
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("n'a pas pu", r.data['message'])
+        self.c.refresh_from_db()
+        self.assertEqual(self.c.statut, 'refusee')
+
+    @patch('candidature.crm.requests.post', return_value=crm_response(201))
+    def test_once_in_the_crm_the_decision_is_made_there(self, post):
+        self.accepter()
+        r = self.refuser()
+        self.assertEqual(r.status_code, 409)
+        self.c.refresh_from_db()
+        self.assertEqual(self.c.statut, 'preselectionnee')
+
+    @patch('candidature.crm.requests.post')
+    def test_refused_candidature_is_never_sent_to_the_crm(self, post):
+        self.refuser(envoyer_email=False)
+        self.assertEqual(self.accepter().status_code, 409)
+        post.assert_not_called()
+        self.assertEqual(self.refuser().status_code, 409)   # already refused
+
+    def test_anonymous_cannot_refuse(self):
+        self.client.force_authenticate(None)
+        self.assertIn(self.refuser().status_code, (401, 403))
+
+
 @override_settings(MEDIA_ROOT=MEDIA, EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
                    DEFAULT_FROM_EMAIL='contact@test.tn')
 class CvProtectionTests(APITestCase):

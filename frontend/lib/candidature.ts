@@ -18,9 +18,12 @@ nom: string;
   disponible_du: string | null; // YYYY-MM-DD
   disponible_au: string | null;
   cv_nom_original: string;
-  statut: 'nouvelle' | 'preselectionnee'; // 'preselectionnee' = accepted, sent to the CRM
+  statut: 'nouvelle' | 'preselectionnee' | 'refusee'; // 'preselectionnee' = accepted, sent to the CRM
   crm_envoye_le: string | null; // set once the CRM has received it
   crm_erreur: string; // last CRM send error, empty when fine
+  refusee_le: string | null;
+  email_examen_envoye_le: string | null; // "under review" e-mail, sent when the CRM first receives it
+  email_refus_envoye_le: string | null;
 };
 
 
@@ -52,6 +55,12 @@ export async function DeleteCandidatureAdmin(id: number): Promise<void> {
 
 // First acceptance: pre-select the candidature and send it to the CRM for analysis.
 // The server answers 200 even when the CRM is down (crm_ok=false): the pre-selection is kept, retry any time.
+// Refuse here, before the CRM (the backend refuses with 409 once the CRM has it).
+export async function refuserCandidature(id: number, envoyerEmail: boolean): Promise<{ candidature: candidature; email_envoye: boolean; message: string }> {
+  const res = await api.post(`/candidature/${id}/refuser/`, { envoyer_email: envoyerEmail });
+  return res.data;
+}
+
 export async function accepterCandidature(id: number): Promise<{ candidature: candidature; crm_ok: boolean; message: string }> {
   const res = await api.post(`/candidature/${id}/accepter/`);
   return res.data;

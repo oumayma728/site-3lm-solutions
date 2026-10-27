@@ -8,6 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
 from .crm import envoyer_au_crm
+from . import emails
 from .models import Candidature
 from .serializers import CandidatureSerializer
 from django.core.mail import EmailMessage
@@ -114,16 +115,64 @@ class CandidatureViewSet(viewsets.ModelViewSet):
         press the button again (the CRM updates the same candidate, it never duplicates it).
         """
         candidature = self.get_object()
+        if candidature.statut == 'refusee':
+            return Response({'detail': "Cette candidature a été refusée : elle ne peut pas être envoyée au CRM."}, status=409)
         ok, message = envoyer_au_crm(candidature)
         candidature.statut = 'preselectionnee'
         candidature.crm_tentatives += 1
         candidature.crm_erreur = '' if ok else message[:300]
+        champs = ['statut', 'crm_tentatives', 'crm_erreur', 'crm_envoye_le', 'updated_at']
         if ok:
             candidature.crm_envoye_le = timezone.now()
-        candidature.save(update_fields=['statut', 'crm_tentatives', 'crm_erreur', 'crm_envoye_le', 'updated_at'])
+            # First time the CRM has it: tell the candidate it is under review (never twice)
+            if not candidature.email_examen_envoye_le:
+                if emails.envoyer(candidature, emails.email_examen(candidature)):
+                    candidature.email_examen_envoye_le = timezone.now()
+                    champs.append('email_examen_envoye_le')
+                    message += " E-mail « en cours d'examen » envoyé au candidat."
+                else:
+                    message += " (L'e-mail au candidat n'a pas pu être envoyé.)"
+        candidature.save(update_fields=champs)
         return Response({
             'candidature': self.get_serializer(candidature).data,
             'crm_ok': ok,
+            'message': message,
+        })
+
+    @action(detail=True, methods=['post'])
+    def refuser(self, request, pk=None):
+        """Turn the candidature down here, before it reaches the CRM, and (optionally) tell the candidate.
+
+        Once the CRM has it, the decision is made in the CRM, which sends its own e-mail: refusing
+        here as well would let the two tools contradict each other.
+        """
+        candidature = self.get_object()
+        if candidature.crm_envoye_le:
+            return Response({'detail': "Déjà envoyée au CRM : la décision se prend dans le CRM."}, status=409)
+        if candidature.statut == 'refusee':
+            return Response({'detail': "Cette candidature est déjà refusée."}, status=409)
+
+        candidature.statut = 'refusee'
+        candidature.refusee_le = timezone.now()
+        champs = ['statut', 'refusee_le', 'updated_at']
+        envoyer_email = request.data.get('envoyer_email', True) not in (False, 'false', '0', 0)
+        email_envoye = False
+        if envoyer_email:
+            email_envoye = emails.envoyer(candidature, emails.email_refus(candidature))
+            if email_envoye:
+                candidature.email_refus_envoye_le = timezone.now()
+                champs.append('email_refus_envoye_le')
+        candidature.save(update_fields=champs)
+
+        if not envoyer_email:
+            message = "Candidature refusée (aucun e-mail envoyé)."
+        elif email_envoye:
+            message = "Candidature refusée. E-mail de refus envoyé au candidat."
+        else:
+            message = "Candidature refusée, mais l'e-mail au candidat n'a pas pu être envoyé."
+        return Response({
+            'candidature': self.get_serializer(candidature).data,
+            'email_envoye': email_envoye,
             'message': message,
         })
 

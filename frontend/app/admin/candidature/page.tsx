@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import {
-  getAllCandidaturesAdmin, DeleteCandidatureAdmin, accepterCandidature, openCandidatureCv,
+  getAllCandidaturesAdmin, DeleteCandidatureAdmin, accepterCandidature, refuserCandidature, openCandidatureCv,
   type candidature,
 } from '@/lib/candidature';
 
@@ -78,7 +78,7 @@ const NIVEAU_ORDER = [
 const SANS_NIVEAU = ''; // candidatures with no study level
 
 type Periode = 'all' | 'semaine' | 'mois' | 'mois_prochain' | 'custom';
-type EnvoiFiltre = 'all' | 'a_traiter' | 'envoyees' | 'a_renvoyer';
+type EnvoiFiltre = 'all' | 'a_traiter' | 'envoyees' | 'a_renvoyer' | 'refusees';
 
 // Local date as YYYY-MM-DD (the API's disponible_du has the same format, so strings compare correctly)
 function ymd(d: Date) {
@@ -118,13 +118,19 @@ const STATUT_TABS: { value: EnvoiFiltre; label: string; color: string }[] = [
   { value: 'a_traiter', label: 'Nouvelles', color: 'var(--accent-secondary)' },
   { value: 'a_renvoyer', label: 'À renvoyer au CRM', color: 'var(--accent-amber)' },
   { value: 'envoyees', label: 'Envoyées au CRM', color: 'var(--accent-sage)' },
+  { value: 'refusees', label: 'Refusées', color: 'var(--accent-brick)' },
 ];
 
 function matchesStatut(c: candidature, tab: EnvoiFiltre) {
   if (tab === 'a_traiter') return c.statut === 'nouvelle';
   if (tab === 'envoyees') return alreadySent(c);
   if (tab === 'a_renvoyer') return c.statut === 'preselectionnee' && !alreadySent(c);
+  if (tab === 'refusees') return c.statut === 'refusee';
   return true;
+}
+
+function formatDateHeure(iso: string) {
+  return new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
 }
 
 export default function CandidaturesListPage() {
@@ -137,6 +143,8 @@ export default function CandidaturesListPage() {
   const [search, setSearch] = useState('');
   const [poste, setPoste] = useState('');
   const [accepting, setAccepting] = useState(false);
+  // Refusal confirmation panel in the drawer (null = closed)
+  const [refus, setRefus] = useState<{ id: number; envoyerEmail: boolean; enCours: boolean } | null>(null);
 
   // Filters and bulk selection
   const [niveaux, setNiveaux] = useState<string[]>([]); // empty = every level
@@ -173,6 +181,23 @@ export default function CandidaturesListPage() {
       await openCandidatureCv(c.id, c.cv_nom_original);
     } catch {
       toast.error('Impossible de télécharger le CV.');
+    }
+  }
+
+  async function handleRefuser(id: number, envoyerEmail: boolean) {
+    setRefus({ id, envoyerEmail, enCours: true });
+    try {
+      const { candidature: updated, email_envoye, message } = await refuserCandidature(id, envoyerEmail);
+      setCandidatures((list) => list.map((c) => (c.id === id ? updated : c)));
+      setSelectedCandidature(updated);
+      setSelection((s) => { const next = new Set(s); next.delete(id); return next; });
+      if (!envoyerEmail || email_envoye) toast.success(message);
+      else toast.error(message);
+      setRefus(null);
+    } catch (err) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      toast.error(detail || 'Impossible de refuser cette candidature.');
+      setRefus({ id, envoyerEmail, enCours: false });
     }
   }
 
@@ -247,7 +272,8 @@ export default function CandidaturesListPage() {
   // ── Bulk send ──
   // "Select all" picks the visible candidatures the CRM has not received yet. Anything hidden by a
   // filter is never part of the selection that gets sent.
-  const envoyables = filteredCandidatures.filter((c) => !alreadySent(c));
+  // Refused candidatures are never sent to the CRM
+  const envoyables = filteredCandidatures.filter((c) => !alreadySent(c) && c.statut !== 'refusee');
   const aEnvoyer = filteredCandidatures.filter((c) => selection.has(c.id));
   const toutSelectionne = envoyables.length > 0 && envoyables.every((c) => selection.has(c.id));
 
@@ -614,6 +640,11 @@ export default function CandidaturesListPage() {
                         {c.crm_envoye_le ? 'Envoyée au CRM' : 'À renvoyer au CRM'}
                       </span>
                     )}
+                    {c.statut === 'refusee' && (
+                      <span className="shrink-0 rounded-full bg-[var(--accent-brick)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--accent-brick)]">
+                        Refusée
+                      </span>
+                    )}
                   </div>
 
                   {/* Poste — the key info for a recruiter */}
@@ -667,11 +698,12 @@ export default function CandidaturesListPage() {
                 <input
                   type="checkbox"
                   checked={selection.has(c.id)}
+                  disabled={c.statut === 'refusee'}
                   onChange={() => toggleOne(c.id)}
                   onClick={(e) => e.stopPropagation()}
                   aria-label={`Sélectionner ${c.nom}`}
-                  title="Sélectionner pour l’envoi au CRM"
-                  className="mr-1 h-4 w-4 cursor-pointer"
+                  title={c.statut === 'refusee' ? 'Candidature refusée' : 'Sélectionner pour l’envoi au CRM'}
+                  className="mr-1 h-4 w-4 cursor-pointer disabled:cursor-not-allowed disabled:opacity-30"
                 />
                 <a
                   href={`mailto:${c.email}`}
@@ -957,6 +989,21 @@ export default function CandidaturesListPage() {
                   Pré-sélection
                 </p>
 
+                {selectedCandidature.statut === 'refusee' ? (
+                  <div className="rounded-xl border border-[var(--accent-brick)]/30 bg-[var(--accent-brick)]/5 p-4">
+                    <p className="text-sm font-medium text-[var(--accent-brick)]">
+                      ✕ Candidature refusée
+                      {selectedCandidature.refusee_le && (
+                        <span className="font-normal text-[var(--ink-soft)]"> le {formatDateHeure(selectedCandidature.refusee_le)}</span>
+                      )}
+                    </p>
+                    <p className="mt-1 text-sm text-[var(--ink-soft)]">
+                      {selectedCandidature.email_refus_envoye_le
+                        ? `E-mail de refus envoyé au candidat le ${formatDateHeure(selectedCandidature.email_refus_envoye_le)}.`
+                        : 'Aucun e-mail de refus n’a été envoyé au candidat.'}
+                    </p>
+                  </div>
+                ) : (
                 <div className="rounded-xl border border-[var(--line)] p-4">
                   {selectedCandidature.crm_envoye_le ? (
                     <p className="text-sm">
@@ -995,8 +1042,83 @@ export default function CandidaturesListPage() {
                           ? 'Réessayer l’envoi au CRM'
                           : 'Accepter et envoyer au CRM'}
                   </button>
+
+                  {selectedCandidature.crm_envoye_le && (
+                    <p className="mt-3 text-xs text-[var(--ink-soft)]">
+                      {selectedCandidature.email_examen_envoye_le
+                        ? `✉️ E-mail « candidature en cours d’examen » envoyé le ${formatDateHeure(selectedCandidature.email_examen_envoye_le)}.`
+                        : '✉️ L’e-mail « en cours d’examen » n’a pas pu être envoyé au candidat.'}
+                    </p>
+                  )}
                 </div>
+                )}
               </section>
+
+              {/* Refusal: only before the CRM has it (afterwards the decision is made in the CRM) */}
+              {selectedCandidature.statut !== 'refusee' && (
+                <section className="mt-7">
+                  <p className="mb-3 text-[10px] uppercase tracking-wider text-[var(--ink-soft)] font-mono-num">
+                    Refus
+                  </p>
+                  <div className="rounded-xl border border-[var(--line)] p-4">
+                    {selectedCandidature.crm_envoye_le ? (
+                      <p className="text-sm text-[var(--ink-soft)]">
+                        Cette candidature est dans le CRM : l’acceptation ou le refus se décide dans le CRM, qui envoie lui-même l’e-mail au candidat.
+                      </p>
+                    ) : refus && refus.id === selectedCandidature.id ? (
+                      <div>
+                        <p className="text-sm font-medium">Refuser la candidature de {selectedCandidature.nom} ?</p>
+                        <label className="mt-3 flex cursor-pointer items-start gap-2.5 text-sm">
+                          <input
+                            type="checkbox"
+                            className="mt-0.5 h-4 w-4"
+                            checked={refus.envoyerEmail}
+                            disabled={refus.enCours}
+                            onChange={(e) => setRefus({ ...refus, envoyerEmail: e.target.checked })}
+                          />
+                          <span>
+                            Envoyer l’e-mail de refus au candidat
+                            <span className="block text-xs text-[var(--ink-soft)]">
+                              Message poli et standard (le même que celui du CRM), sans motif interne.
+                            </span>
+                          </span>
+                        </label>
+                        <div className="mt-4 flex gap-2">
+                          <button
+                            type="button"
+                            disabled={refus.enCours}
+                            onClick={() => setRefus(null)}
+                            className="flex-1 rounded-lg border border-[var(--line)] px-4 py-2 text-sm font-medium transition hover:bg-[var(--line)]/40 disabled:opacity-50"
+                          >
+                            Annuler
+                          </button>
+                          <button
+                            type="button"
+                            disabled={refus.enCours}
+                            onClick={() => handleRefuser(selectedCandidature.id, refus.envoyerEmail)}
+                            className="flex-1 rounded-lg bg-[var(--accent-brick)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+                          >
+                            {refus.enCours ? 'Refus en cours…' : 'Confirmer le refus'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between gap-4">
+                        <p className="text-sm text-[var(--ink-soft)]">
+                          Le profil ne convient pas ? Refusez-la ici, le candidat peut être prévenu par e-mail.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setRefus({ id: selectedCandidature.id, envoyerEmail: true, enCours: false })}
+                          className="shrink-0 rounded-lg border border-[var(--accent-brick)]/40 px-4 py-2 text-sm font-medium text-[var(--accent-brick)] transition hover:bg-[var(--accent-brick)]/10"
+                        >
+                          Refuser
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
 
               <div>
                 <button

@@ -44,7 +44,9 @@
 .offre-title-link{color:inherit;text-decoration:none;outline:none}
 /* Stretch the title link over the whole card */
 .offre-title-link::after{content:'';position:absolute;inset:0;z-index:2}
-.offre-card h3{position:static}
+/* The card is a flex container: a flex item's z-index applies even when static, so the title must
+   drop the z-index:1 of `.offre-card > *` — otherwise it traps the stretched link below the footer */
+.offre-card h3{position:static;z-index:auto}
 .offre-card:has(.offre-title-link:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
 
 .offre-card p{margin:0 0 1.1rem;color:var(--muted);font-size:.88rem;line-height:1.6;flex:1;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}

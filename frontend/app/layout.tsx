@@ -4,10 +4,13 @@ import Script from "next/script";
 import { ToastProvider } from "@/components/ToastProvider";
 import { LangProvider } from "@/components/site/LangProvider";
 import { getLang } from "@/lib/i18n-server";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "3LM Solutions ",
+  // Base for absolute URLs in metadata (canonical, social previews)
+  metadataBase: new URL(SITE_URL),
+  title: "3LM Solutions",
   description: "Studio tech basé à Ariana, Tunisie. Nous concevons et déployons des plateformes web, applications mobiles, agents IA et infrastructures cloud pour des entreprises qui veulent avancer vite, sans sacrifier la fiabilité.",
 };
 
