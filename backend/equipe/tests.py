@@ -68,5 +68,17 @@ class ComptesTests(APITestCase):
         self.client.patch(f'/api/comptes/{self.membre.id}/', {'is_active': False})
         self.assertFalse(Token.objects.filter(user=self.membre).exists())
 
+    def test_login_accepts_any_case_and_the_email(self):
+        from django.core.cache import cache
+        cache.clear()   # login rate limit
+        self.client.post('/api/comptes/', {'username': 'Sarra.B', 'email': 'sarra@3lm.tn', 'password': FORT})
+        self.client.force_authenticate(None)
+        for identifiant in ('Sarra.B', 'sarra.b', '  SARRA.B ', 'Sarra@3LM.tn'):
+            with self.subTest(identifiant):
+                r = self.client.post('/api/auth/token/', {'username': identifiant, 'password': FORT})
+                self.assertEqual(r.status_code, 200, r.data)
+        r = self.client.post('/api/auth/token/', {'username': 'sarra.b', 'password': 'mauvais'})
+        self.assertEqual(r.status_code, 400)
+
     def test_accounts_are_never_deleted(self):
         self.assertEqual(self.client.delete(f'/api/comptes/{self.membre.id}/').status_code, 405)

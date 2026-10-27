@@ -4,6 +4,7 @@ import SiteNavbar from '@/components/site/SiteNavbar';
 import SiteFooter from '@/components/site/SiteFooter';
 import { getLang } from '@/lib/i18n-server';
 import type { Translations } from '@/lib/i18n';
+import { SITE_URL } from '@/lib/site';
 import '@/components/site/tokens.css';
 import '@/components/site/Home.css';
 
@@ -98,13 +99,32 @@ const T: Translations<typeof fr> = {
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = T[await getLang()];
-  return { title: t.metaTitle, description: t.metaDescription };
+  return {
+    title: t.metaTitle,
+    description: t.metaDescription,
+    // This is THE page for "3LM Solutions": tell search engines its one official address
+    alternates: { canonical: '/' },
+    openGraph: { title: t.metaTitle, description: t.metaDescription, url: '/', siteName: '3LM Solutions', type: 'website' },
+  };
 }
+
+// Company description for search engines (schema.org), so they connect the brand name to this home page
+const ORGANIZATION = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: '3LM Solutions',
+  url: SITE_URL,
+  email: 'contact@3lmsolutions.net',
+  telephone: '+216 56 566 533',
+  address: { '@type': 'PostalAddress', addressLocality: 'Ariana', addressCountry: 'TN' },
+  sameAs: ['https://www.linkedin.com/company/3lm-solutions/'],
+};
 
 export default async function Home() {
   const t = T[await getLang()];
   return (
     <div className="site-lm">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION) }} />
       <SiteNavbar />
       <main className="home-page">
         <section className="home-hero">

@@ -16,8 +16,9 @@ NIVEAU_ETUDE_CHOICES = [(n, n) for n in [
     'Autre',
 ]]
 
-# Pre-selection: only an accepted candidature is sent to the CRM (intern management tool) for analysis
-STATUT_CHOICES = [('nouvelle', 'Nouvelle'), ('preselectionnee', 'Pré-sélectionnée')]
+# Pre-selection: only an accepted candidature is sent to the CRM (intern management tool) for analysis.
+# 'refusee': turned down here, before reaching the CRM (once in the CRM, the decision is made there).
+STATUT_CHOICES = [('nouvelle', 'Nouvelle'), ('preselectionnee', 'Pré-sélectionnée'), ('refusee', 'Refusée')]
 
 
 def cv_upload_to(instance, filename):
@@ -58,6 +59,11 @@ class Candidature(models.Model):
     crm_envoye_le = models.DateTimeField(null=True, blank=True)   # set once the CRM has received it
     crm_tentatives = models.PositiveSmallIntegerField(default=0)
     crm_erreur = models.CharField(max_length=300, blank=True)     # last send error, empty when fine
+    refusee_le = models.DateTimeField(null=True, blank=True)
+    # E-mails to the candidate (null = not sent, or the mail server failed): never sent twice
+    email_examen_envoye_le = models.DateTimeField(null=True, blank=True)   # "under review" (sent to the CRM)
+    email_refus_envoye_le = models.DateTimeField(null=True, blank=True)
+
     def save(self, *args, **kwargs):
         if self.email:
             self.email = self.email.strip().lower()
