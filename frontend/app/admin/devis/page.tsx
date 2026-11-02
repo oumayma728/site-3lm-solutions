@@ -14,7 +14,8 @@ import { Pagination, usePagination } from '@/components/Pagination';
 const STATUT_FILTERS = ['tous', ...Object.keys(STATUT_CONFIG)];
 
 // Client / Statut / Montant / Créé le / actions
-const COLS = 'grid grid-cols-[minmax(0,1fr)_130px_130px_100px_36px] gap-4';
+// min-w: on phones the table scrolls sideways inside its card instead of squeezing the columns
+const COLS = 'grid min-w-[640px] grid-cols-[minmax(0,1fr)_130px_130px_100px_36px] gap-4';
 
 function StatCard({ label, value, sub, color }: { label: string; value: string | number; sub: string; color: string }) {
   return (
@@ -85,7 +86,7 @@ export default function DevisListPage() {
   }, [devisList]);
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-8 py-10">
+    <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-8 sm:py-10">
       <PageHeader
         eyebrow="Registre"
         title="Devis"
@@ -182,7 +183,7 @@ export default function DevisListPage() {
           Aucun devis ne correspond.
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface)]">
+        <div className="overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--surface)]">
           <div className={`${COLS} border-b border-[var(--line)] bg-[var(--paper)] px-5 py-3 text-xs font-medium text-[var(--ink-soft)]`}>
             <span>Client</span>
             <span>Statut</span>

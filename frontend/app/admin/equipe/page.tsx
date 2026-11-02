@@ -46,7 +46,7 @@ export default function EquipeListPage() {
     const pager = usePagination(filteredEquipes, search);
 
     return (
-        <div className="mx-auto w-full max-w-7xl px-8 py-10">
+        <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-8 sm:py-10">
             <PageHeader
                 eyebrow="Équipe"
                 title="Employés"
@@ -64,9 +64,9 @@ export default function EquipeListPage() {
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                         {/* Search */}
-                        <div className="relative w-72">
+                        <div className="relative w-full sm:w-72">
                             <input
                                 type="text"
                                 placeholder="Rechercher un employé..."

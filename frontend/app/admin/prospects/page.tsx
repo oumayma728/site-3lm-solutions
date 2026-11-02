@@ -78,11 +78,11 @@ export default function ProspectsPage() {
   };
 
   return (
-    <div className="mx-auto w-full px-8 py-10 max-w-7xl">
+    <div className="mx-auto w-full px-4 py-6 sm:px-8 sm:py-10 max-w-7xl">
       <PageHeader eyebrow="Ligne directe" title="Prospects" />
 
       {!loading && list.length > 0 && (
-        <div className="grid grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
           {[
             { label: 'Total', value: stats.total, from: 'var(--accent-secondary)', to: 'var(--accent-primary)' },
             { label: 'Nouveaux', value: stats.nouveau, from: 'var(--accent-amber)', to: 'var(--accent-primary)' },
@@ -151,8 +151,8 @@ export default function ProspectsPage() {
       ) : filtered.length === 0 ? (
         <p className="text-sm text-[var(--ink-soft)]">Aucun résultat pour cette recherche.</p>
       ) : (
-        <div className="rounded-2xl bg-[var(--surface)] border border-[var(--line)] overflow-hidden">
-          <div className="grid grid-cols-[1fr_180px_160px_36px] px-5 py-3 text-[11px] uppercase tracking-wider text-[var(--ink-soft)] border-b border-[var(--line)] font-mono-num">
+        <div className="rounded-2xl bg-[var(--surface)] border border-[var(--line)] overflow-x-auto">
+          <div className="grid min-w-[600px] grid-cols-[1fr_180px_160px_36px] px-5 py-3 text-[11px] uppercase tracking-wider text-[var(--ink-soft)] border-b border-[var(--line)] font-mono-num">
             <span>Contact</span>
             <span>Coordonnées</span>
             <span>Statut</span>
@@ -161,7 +161,7 @@ export default function ProspectsPage() {
           {pager.pageItems.map((c, i) => (
             <div
               key={c.id}
-              className="row-in grid grid-cols-[1fr_180px_160px_36px] px-5 py-4 items-center border-b border-[var(--line)] last:border-0 transition-colors hover:bg-[rgba(108,92,231,0.04)]"
+              className="row-in grid min-w-[600px] grid-cols-[1fr_180px_160px_36px] px-5 py-4 items-center border-b border-[var(--line)] last:border-0 transition-colors hover:bg-[rgba(108,92,231,0.04)]"
               style={{ animationDelay: `${Math.min(i, 10) * 25}ms` }}
             >
               <div className="min-w-0 pr-4 flex items-center gap-3">

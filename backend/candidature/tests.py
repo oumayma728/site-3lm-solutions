@@ -293,6 +293,24 @@ class AnalyseCvTests(APITestCase):
         self.assertEqual(self.c.statut, 'nouvelle')                  # never refused automatically
 
     @patch('candidature.analyse._appeler')
+    def test_only_relevant_projects_count(self, appeler):
+        hors_sujet = [{'titre': 'Site de l’école', 'pertinent': False, 'raison': 'WordPress'},
+                      {'titre': 'Gestion Excel', 'pertinent': False, 'raison': 'tableur'}]
+        appeler.return_value = reponse_ia(projets=hors_sujet)
+        r = self.analyser()
+        self.assertEqual((r.data['analyse']['nb_projets'], r.data['analyse']['nb_projets_pertinents']), (2, 0))
+        self.assertTrue(r.data['criteres']['hors_criteres'])          # 2 projects, but none relevant
+        self.assertIn('pertinent', r.data['criteres']['raison'])
+
+    @patch('candidature.analyse._appeler')
+    def test_two_relevant_projects_are_enough(self, appeler):
+        appeler.return_value = reponse_ia(projets=[
+            {'titre': 'E-commerce', 'pertinent': True, 'raison': 'React + Django'},
+            {'titre': 'Blog', 'pertinent': True, 'raison': 'développement web'},
+        ])
+        self.assertFalse(self.analyser().data['criteres']['hors_criteres'])
+
+    @patch('candidature.analyse._appeler')
     def test_a_matching_profile_is_not_flagged(self, appeler):
         appeler.return_value = reponse_ia(competences_offre_presentes=['react'], projets=['A'])
         self.assertFalse(self.analyser().data['criteres']['hors_criteres'])

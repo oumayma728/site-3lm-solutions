@@ -371,7 +371,7 @@ export default function DevisPreview({
                 </div>
 
                 {/* Champs d'estimation — base du calcul de prix_unitaire */}
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div>
                     <label className="text-[10px] uppercase tracking-wide text-[var(--ink-soft)] block mb-1">Profil</label>
                     <select
@@ -517,7 +517,7 @@ export default function DevisPreview({
               className={
                 modeCoutReel
                   ? 'grid grid-cols-[1fr_64px] px-5 py-3 text-xs font-semibold text-[var(--ink-soft)] border-b border-[var(--line)] sticky top-0 bg-[var(--surface)]'
-                  : 'grid grid-cols-[1fr_64px_96px_96px] px-5 py-3 text-xs font-semibold text-[var(--ink-soft)] border-b border-[var(--line)] sticky top-0 bg-[var(--surface)]'
+                  : 'grid min-w-[520px] grid-cols-[1fr_64px_96px_96px] px-5 py-3 text-xs font-semibold text-[var(--ink-soft)] border-b border-[var(--line)] sticky top-0 bg-[var(--surface)]'
               }
             >
               <span>Description</span>
@@ -542,7 +542,7 @@ export default function DevisPreview({
                   className={
                     modeCoutReel
                       ? 'grid grid-cols-[1fr_64px] px-5 py-3.5 items-start border-b border-[var(--line)] last:border-0 text-sm transition-colors'
-                      : 'grid grid-cols-[1fr_64px_96px_96px] px-5 py-3.5 items-start border-b border-[var(--line)] last:border-0 text-sm transition-colors'
+                      : 'grid min-w-[520px] grid-cols-[1fr_64px_96px_96px] px-5 py-3.5 items-start border-b border-[var(--line)] last:border-0 text-sm transition-colors'
                   }
                   style={{ background: 'transparent' }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = '#FFF6F3')}

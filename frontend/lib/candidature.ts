@@ -27,7 +27,15 @@ nom: string;
   // AI pre-analysis of the CV (flags only: a person always decides)
   analyse_statut: '' | 'en_cours' | 'ok' | 'non_analysable' | 'erreur';
   analyse_le: string | null;
-  analyse: { competences?: string[]; technologies?: string[]; projets?: string[]; nb_projets?: number; resume?: string };
+  // projets: objects since relevance is assessed (older analyses stored plain titles)
+  analyse: {
+    competences?: string[];
+    technologies?: string[];
+    projets?: (string | { titre: string; pertinent: boolean; raison?: string })[];
+    nb_projets?: number;
+    nb_projets_pertinents?: number; // absent on older analyses: re-run them
+    resume?: string;
+  };
   analyse_erreur: string;
   // hors_criteres: true = outside the team's criteria, false = fits, null = cannot be evaluated
   criteres: { hors_criteres: boolean | null; raison: string };

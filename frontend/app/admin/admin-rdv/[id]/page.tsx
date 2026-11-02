@@ -108,7 +108,7 @@ function RendezVousDetailContent() {
 
   if (loading) {
     return (
-      <div className="px-8 py-10">
+      <div className="px-4 py-6 sm:px-8 sm:py-10">
         <div className="animate-pulse space-y-4 max-w-2xl">
           <div className="h-4 w-32 rounded bg-[var(--line)]" />
           <div className="h-10 w-64 rounded bg-[var(--line)]" />
@@ -120,7 +120,7 @@ function RendezVousDetailContent() {
 
   if (error || !rdv) {
     return (
-      <div className="mx-auto w-full px-8 py-10 max-w-2xl">
+      <div className="mx-auto w-full px-4 py-6 sm:px-8 sm:py-10 max-w-2xl">
         <p className="text-[var(--accent-brick)] text-sm mb-4">{error ?? 'Rendez-vous introuvable.'}</p>
         <Link href="/admin/admin-rdv" className="text-sm font-semibold underline underline-offset-4" style={{ color: 'var(--accent-secondary)' }}>
           Retour à la ligne directe
@@ -132,7 +132,7 @@ function RendezVousDetailContent() {
   const typeCfg = TYPE_RDV_CONFIG[rdv.type_rdv];
 
   return (
-    <div className="mx-auto w-full px-8 py-10 max-w-2xl">
+    <div className="mx-auto w-full px-4 py-6 sm:px-8 sm:py-10 max-w-2xl">
       <Link href="/admin/admin-rdv" className="text-xs font-mono-num text-[var(--ink-soft)] hover:text-[var(--accent-secondary)] transition-colors">
         ← retour à la ligne directe
       </Link>
@@ -259,7 +259,7 @@ function RendezVousDetailContent() {
 
 export default function RendezVousDetailPage() {
   return (
-    <Suspense fallback={<div className="px-8 py-10 text-sm text-[var(--ink-soft)]">Chargement...</div>}>
+    <Suspense fallback={<div className="px-4 py-6 sm:px-8 sm:py-10 text-sm text-[var(--ink-soft)]">Chargement...</div>}>
       <RendezVousDetailContent />
     </Suspense>
   );

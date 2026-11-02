@@ -46,7 +46,7 @@ function StatCard({ label, hint, value, color, icon, href }: {
   return (
     <Link
       href={href}
-      className="card-hover group flex items-start gap-4 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5"
+      className="card-hover group flex min-w-0 flex-col items-start gap-3 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4 sm:flex-row sm:gap-4 sm:p-5"
     >
       <span
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
@@ -56,7 +56,7 @@ function StatCard({ label, hint, value, color, icon, href }: {
       </span>
       <div className="min-w-0">
         <p className="text-2xl font-semibold leading-none text-[var(--ink)] font-mono-num">{value}</p>
-        <p className="mt-1.5 text-sm font-medium text-[var(--ink)]">{label}</p>
+        <p className="mt-1.5 text-sm font-medium text-[var(--ink)] break-words">{label}</p>
         <p className="mt-0.5 text-xs text-[var(--ink-soft)] group-hover:text-[var(--accent-secondary)] transition-colors">
           {value > 0 ? `${hint} →` : 'Rien en attente'}
         </p>
@@ -143,8 +143,15 @@ export default function DashboardPage() {
         .sort((a, b) => (a.date_creation < b.date_creation ? 1 : -1)),
     [clients]
   );
+  // Flagged "Hors critères" by the AI pre-analysis: kept apart (their own tab), not "to examine"
+  const nbHorsCriteres = useMemo(
+    () => candidatures.filter((c) => c.statut === 'nouvelle' && c.criteres?.hors_criteres === true).length,
+    [candidatures]
+  );
   const candidaturesNouvelles = useMemo(
-    () => candidatures.filter((c) => c.statut === 'nouvelle').sort((a, b) => (a.created_at < b.created_at ? 1 : -1)),
+    () => candidatures
+      .filter((c) => c.statut === 'nouvelle' && c.criteres?.hors_criteres !== true)
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1)),
     [candidatures]
   );
 
@@ -164,7 +171,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-8 py-10">
+    <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-8 sm:py-10">
       {/* Header: date, what needs attention, quick actions */}
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -293,6 +300,14 @@ export default function DashboardPage() {
                   </Link>
                 ))}
               </Panel>
+              {nbHorsCriteres > 0 && (
+                <Link
+                  href="/admin/candidature"
+                  className="-mt-3 block rounded-xl border border-[var(--accent-brick)]/30 bg-[var(--accent-brick)]/5 px-5 py-3 text-sm text-[var(--accent-brick)] transition-colors hover:bg-[var(--accent-brick)]/10"
+                >
+                  {nbHorsCriteres} candidature{nbHorsCriteres > 1 ? 's' : ''} hors critères à revoir (onglet « Hors critères ») →
+                </Link>
+              )}
 
               <Panel
                 title="Devis en attente"
