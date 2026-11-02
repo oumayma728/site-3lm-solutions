@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createOffre, type OffreInput } from '@/lib/offres';
+import { createOffre, updateOffre, type Offre, type OffreInput } from '@/lib/offres';
 import { useToast } from '@/components/ToastProvider';
 import { DEPARTEMENTS, modeleOffre, type ChampsOffre, type ProgrammeStage } from '@/lib/modelesOffres';
 
@@ -11,6 +11,24 @@ function linesToList(value: string): string[] {
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean);
+}
+
+// An existing offer as form fields (lists become one item per line)
+function champsDepuisOffre(o: Offre): ChampsOffre {
+  const lignes = (l: string[]) => (l ?? []).join('\n');
+  return {
+    titre: o.titre,
+    departement: o.departement,
+    location: o.location,
+    contractType: o.contract_type,
+    experience: o.experience,
+    description: o.description,
+    aboutRole: lignes(o.about_role),
+    responsibilities: lignes(o.responsibilities),
+    qualifications: lignes(o.qualifications),
+    benefits: lignes(o.benefits),
+    skills: lignes(o.skills),
+  };
 }
 
 const inputClass =
@@ -26,20 +44,25 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-export default function OffreForm({ type }: { type: 'emploi' | 'stage' }) {
+// Without offre: creates a new offer. With offre: edits it (same form, pre-filled).
+export default function OffreForm({ type, offre }: { type: 'emploi' | 'stage'; offre?: Offre }) {
+  const edition = !!offre;
   const router = useRouter();
   const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [programme, setProgramme] = useState<ProgrammeStage>('pfe');
+  const [programme, setProgramme] = useState<ProgrammeStage>(offre?.programme === 'ete' ? 'ete' : 'pfe');
   // Département choisi dans la liste, ou « autre » (saisie libre, sans modèle).
-  const [choixDepartement, setChoixDepartement] = useState('');
+  const [choixDepartement, setChoixDepartement] = useState(() =>
+    !offre?.departement ? '' : (DEPARTEMENTS as readonly string[]).includes(offre.departement) ? offre.departement : 'autre'
+  );
   // Les champs démarrent avec la partie formelle du modèle (sans département).
-  const [champs, setChamps] = useState<ChampsOffre>(() => modeleOffre(type, 'pfe', null));
+  const [champs, setChamps] = useState<ChampsOffre>(() => (offre ? champsDepuisOffre(offre) : modeleOffre(type, 'pfe', null)));
   // Vrai dès qu'un champ est modifié à la main : le modèle ne l'écrase plus sans confirmation.
-  const [modifie, setModifie] = useState(false);
-  const [actif, setActif] = useState(true);
+  // (an existing offer counts as edited: its text is never replaced by the template without asking)
+  const [modifie, setModifie] = useState(edition);
+  const [actif, setActif] = useState(offre ? offre.actif : true);
 
   const {
     titre, departement, location, contractType, experience, description,
@@ -95,11 +118,19 @@ export default function OffreForm({ type }: { type: 'emploi' | 'stage' }) {
     };
 
     try {
-      await createOffre(payload);
-      toast.success(type === 'stage' ? 'Stage publié.' : 'Poste publié.');
+      if (offre) {
+        // The address (slug) stays the same even if the title changes: links already shared keep working
+        await updateOffre(offre.slug, payload);
+        toast.success('Offre mise à jour.');
+      } else {
+        await createOffre(payload);
+        toast.success(type === 'stage' ? 'Stage publié.' : 'Poste publié.');
+      }
       router.push('/admin/offre');
     } catch {
-      setError("Erreur lors de la création de l'offre. Vérifiez les champs et réessayez.");
+      setError(edition
+        ? "Erreur lors de l'enregistrement. Vérifiez les champs et réessayez."
+        : "Erreur lors de la création de l'offre. Vérifiez les champs et réessayez.");
     } finally {
       setLoading(false);
     }
@@ -109,8 +140,9 @@ export default function OffreForm({ type }: { type: 'emploi' | 'stage' }) {
     <form onSubmit={handleSubmit} className="space-y-8 max-w-3xl">
       <section className="space-y-5">
         <p className="text-sm text-[var(--ink-soft)]">
-          Choisissez {type === 'stage' ? 'le programme et ' : ''}le département : le formulaire est pré-rempli avec
-          un modèle formel. Relisez et ajustez avant de publier.
+          {edition
+            ? 'Modifiez les champs puis enregistrez : les changements sont visibles tout de suite sur le site. Changer de programme ou de département propose de recharger le modèle (avec confirmation).'
+            : `Choisissez ${type === 'stage' ? 'le programme et ' : ''}le département : le formulaire est pré-rempli avec un modèle formel. Relisez et ajustez avant de publier.`}
         </p>
 
         {type === 'stage' && (
@@ -265,7 +297,7 @@ export default function OffreForm({ type }: { type: 'emploi' | 'stage' }) {
           className="w-4 h-4"
         />
         <label htmlFor="actif" className="text-sm">
-          Publier immédiatement (visible sur le site public)
+          {edition ? 'Visible sur le site public (décochez pour archiver)' : 'Publier immédiatement (visible sur le site public)'}
         </label>
       </section>
 
@@ -287,7 +319,9 @@ export default function OffreForm({ type }: { type: 'emploi' | 'stage' }) {
         className="w-full text-white py-3.5 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-40 disabled:grayscale hover:shadow-lg hover:-translate-y-0.5"
         style={{ backgroundColor: 'var(--accent-primary)' }}
       >
-        {loading ? 'Publication en cours...' : type === 'stage' ? 'Publier le stage' : 'Publier le poste'}
+        {edition
+          ? (loading ? 'Enregistrement…' : 'Enregistrer les modifications')
+          : (loading ? 'Publication en cours...' : type === 'stage' ? 'Publier le stage' : 'Publier le poste')}
       </button>
     </form>
   );

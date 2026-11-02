@@ -20,6 +20,9 @@ class CandidatureSerializer(serializers.ModelSerializer):
     site_web = serializers.CharField(write_only=True, required=False, allow_blank=True)
     # The CV URL is never returned: the file is only downloadable via GET /candidature/<id>/cv/
     has_cv = serializers.SerializerMethodField()
+    # "Hors critères" flag. Listing/reading candidatures is staff-only; the public form's response
+    # is returned before any analysis exists, so it never reveals one.
+    criteres = serializers.SerializerMethodField()
 
     class Meta:
         model = Candidature
@@ -27,11 +30,13 @@ class CandidatureSerializer(serializers.ModelSerializer):
             'id', 'nom', 'email', 'telephone', 'cv', 'has_cv', 'type_stage','ecole','niveau_etude','linkedin_url','consentement','site_web','consentement_date','consentement_version','cv_nom_original','disponible_du','disponible_au','offre', 'message','reference','created_at', 'updated_at',
             'statut', 'crm_envoye_le', 'crm_erreur',
             'refusee_le', 'email_examen_envoye_le', 'email_refus_envoye_le',
+            'analyse_statut', 'analyse_le', 'analyse', 'analyse_erreur', 'criteres',
         ]
         # statut / crm_* / decision fields are set by the server only: the public form must never be able to pre-select itself
         read_only_fields = ['id', 'type_stage', 'cv_nom_original', 'consentement_date', 'consentement_version', 'created_at', 'updated_at',
                             'statut', 'crm_envoye_le', 'crm_erreur',
-                            'refusee_le', 'email_examen_envoye_le', 'email_refus_envoye_le']
+                            'refusee_le', 'email_examen_envoye_le', 'email_refus_envoye_le',
+                            'analyse_statut', 'analyse_le', 'analyse', 'analyse_erreur']
         validators = []
         extra_kwargs = {
             'cv': {'write_only': True},
@@ -40,6 +45,14 @@ class CandidatureSerializer(serializers.ModelSerializer):
 
     def get_has_cv(self, obj):
         return bool(obj.cv)
+
+    def get_criteres(self, obj):
+        """{hors_criteres: True/False/None, raison} from the analysis and the CURRENT thresholds."""
+        from .analyse import evaluer_criteres
+        from .models import CriteresTri
+        if 'criteres_tri' not in self.context:          # read once per request, not once per row
+            self.context['criteres_tri'] = CriteresTri.actuels()
+        return evaluer_criteres(obj, self.context['criteres_tri'])
 
 
 

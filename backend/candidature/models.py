@@ -64,6 +64,16 @@ class Candidature(models.Model):
     email_examen_envoye_le = models.DateTimeField(null=True, blank=True)   # "under review" (sent to the CRM)
     email_refus_envoye_le = models.DateTimeField(null=True, blank=True)
 
+    # AI pre-analysis of the CV against the offer's required skills (candidature/analyse.py).
+    # It only FLAGS candidatures outside the criteria: a person always decides (privacy policy).
+    ANALYSE_CHOICES = [('', 'Non analysée'), ('en_cours', 'En cours'), ('ok', 'Analysée'),
+                       ('non_analysable', 'Non analysable'), ('erreur', 'Erreur')]
+    analyse_statut = models.CharField(max_length=20, choices=ANALYSE_CHOICES, blank=True, default='')
+    analyse_le = models.DateTimeField(null=True, blank=True)
+    # {competences: [offer skills found], technologies: [...], nb_projets, projets: [...], resume, modele}
+    analyse = models.JSONField(default=dict, blank=True)
+    analyse_erreur = models.CharField(max_length=300, blank=True)
+
     def save(self, *args, **kwargs):
         if self.email:
             self.email = self.email.strip().lower()
@@ -76,3 +86,26 @@ class Candidature(models.Model):
 
     def __str__(self):
         return self.nom
+
+
+class CriteresTri(models.Model):
+    """Thresholds of the "Hors critères" flag (single row, edited from the candidatures page).
+
+    A candidature is OUTSIDE the criteria when BOTH are true:
+      fewer than `min_competences` of the offer's required skills appear in the CV, AND
+      fewer than `min_projets` projects are described in it.
+    """
+    min_competences = models.PositiveSmallIntegerField(default=1)
+    min_projets = models.PositiveSmallIntegerField(default=2)
+    analyse_auto = models.BooleanField(default=True)   # analyse each new candidature on arrival
+
+    class Meta:
+        verbose_name = 'Critères de tri des candidatures'
+        verbose_name_plural = 'Critères de tri des candidatures'
+
+    @classmethod
+    def actuels(cls):
+        return cls.objects.order_by('id').first() or cls.objects.create()
+
+    def __str__(self):
+        return f'< {self.min_competences} compétence(s) et < {self.min_projets} projet(s)'

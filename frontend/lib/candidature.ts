@@ -24,7 +24,28 @@ nom: string;
   refusee_le: string | null;
   email_examen_envoye_le: string | null; // "under review" e-mail, sent when the CRM first receives it
   email_refus_envoye_le: string | null;
+  // AI pre-analysis of the CV (flags only: a person always decides)
+  analyse_statut: '' | 'en_cours' | 'ok' | 'non_analysable' | 'erreur';
+  analyse_le: string | null;
+  analyse: { competences?: string[]; technologies?: string[]; projets?: string[]; nb_projets?: number; resume?: string };
+  analyse_erreur: string;
+  // hors_criteres: true = outside the team's criteria, false = fits, null = cannot be evaluated
+  criteres: { hors_criteres: boolean | null; raison: string };
 };
+
+export type CriteresTri = { min_competences: number; min_projets: number; analyse_auto: boolean };
+
+export async function analyserCandidature(id: number): Promise<candidature> {
+  return (await api.post(`/candidature/${id}/analyser/`)).data;
+}
+
+export async function getCriteresTri(): Promise<CriteresTri> {
+  return (await api.get('/candidature/criteres/')).data;
+}
+
+export async function updateCriteresTri(data: Partial<CriteresTri>): Promise<CriteresTri> {
+  return (await api.patch('/candidature/criteres/', data)).data;
+}
 
 
 

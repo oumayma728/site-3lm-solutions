@@ -125,6 +125,8 @@ CACHES = {
 # Configuration Anthropic (chatbot du site)
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
 ANTHROPIC_MODEL = os.getenv('ANTHROPIC_MODEL', 'claude-sonnet-4-6')
+# CV pre-analysis (candidature/analyse.py): a fast model is enough to list skills and projects
+CV_ANALYSE_MODEL = os.getenv('CV_ANALYSE_MODEL', 'claude-haiku-4-5-20251001')
 ANTHROPIC_MAX_OUTPUT_TOKENS = int(os.getenv('ANTHROPIC_MAX_OUTPUT_TOKENS', '320'))
 ANTHROPIC_TEMPERATURE = float(os.getenv('ANTHROPIC_TEMPERATURE', '0.35'))
 CHAT_CONTEXT_MESSAGE_LIMIT = int(os.getenv('CHAT_CONTEXT_MESSAGE_LIMIT', '12'))
