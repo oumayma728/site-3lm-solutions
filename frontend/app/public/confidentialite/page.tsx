@@ -16,7 +16,7 @@ const fr = {
   badge: 'Données personnelles',
   h1: ['Politique de ', 'confidentialité'],
   lead: 'Ce que nous collectons, pourquoi, combien de temps nous le gardons et comment exercer vos droits — en clair.',
-  updated: 'Dernière mise à jour : 21 octobre 2026',
+  updated: 'Dernière mise à jour : 2 novembre 2026',
   toc: 'Sommaire',
   back: '← Retour à l’accueil',
 };
@@ -29,7 +29,7 @@ const T: Translations<typeof fr> = {
     badge: 'Personal data',
     h1: ['Privacy ', 'policy'],
     lead: 'What we collect, why, how long we keep it and how to exercise your rights — in plain language.',
-    updated: 'Last updated: October 21, 2026',
+    updated: 'Last updated: November 2, 2026',
     toc: 'Contents',
     back: '← Back to home',
   },

@@ -8,8 +8,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
 from .crm import envoyer_au_crm
-from . import emails
-from .models import Candidature
+from . import analyse, emails
+from .models import Candidature, CriteresTri
+from django.db import transaction
 from .serializers import CandidatureSerializer
 from django.core.mail import EmailMessage
 from django.http import FileResponse, Http404
@@ -60,6 +61,11 @@ class CandidatureViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         candidature = serializer.save()
+
+        # AI pre-analysis of the CV, in the background once the application is saved:
+        # the candidate never waits for it, and a failure never affects their application
+        if settings.ANTHROPIC_API_KEY and CriteresTri.actuels().analyse_auto:
+            transaction.on_commit(lambda: analyse.analyser_en_arriere_plan(candidature.pk))
 
         message = f"""
         Nouvelle candidature reçue.
@@ -138,6 +144,31 @@ class CandidatureViewSet(viewsets.ModelViewSet):
             'crm_ok': ok,
             'message': message,
         })
+
+    @action(detail=True, methods=['post'])
+    def analyser(self, request, pk=None):
+        """(Re)run the AI pre-analysis of the CV now. Only flags: a person still decides."""
+        candidature = analyse.analyser(self.get_object())
+        return Response(self.get_serializer(candidature).data)
+
+    @action(detail=False, methods=['get', 'patch'])
+    def criteres(self, request):
+        """Thresholds of the "Hors critères" flag, editable from the candidatures page."""
+        c = CriteresTri.actuels()
+        if request.method == 'PATCH':
+            for champ in ('min_competences', 'min_projets'):
+                if champ in request.data:
+                    try:
+                        valeur = int(request.data[champ])
+                    except (TypeError, ValueError):
+                        return Response({champ: 'Nombre entier attendu.'}, status=400)
+                    if not 0 <= valeur <= 20:
+                        return Response({champ: 'Valeur entre 0 et 20.'}, status=400)
+                    setattr(c, champ, valeur)
+            if 'analyse_auto' in request.data:
+                c.analyse_auto = request.data['analyse_auto'] not in (False, 'false', '0', 0)
+            c.save()
+        return Response({'min_competences': c.min_competences, 'min_projets': c.min_projets, 'analyse_auto': c.analyse_auto})
 
     @action(detail=True, methods=['post'])
     def refuser(self, request, pk=None):

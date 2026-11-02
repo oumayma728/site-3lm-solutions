@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import {
   getAllCandidaturesAdmin, DeleteCandidatureAdmin, accepterCandidature, refuserCandidature, openCandidatureCv,
+  analyserCandidature, getCriteresTri, updateCriteresTri, type CriteresTri,
   type candidature,
 } from '@/lib/candidature';
 
@@ -78,7 +79,7 @@ const NIVEAU_ORDER = [
 const SANS_NIVEAU = ''; // candidatures with no study level
 
 type Periode = 'all' | 'semaine' | 'mois' | 'mois_prochain' | 'custom';
-type EnvoiFiltre = 'all' | 'a_traiter' | 'envoyees' | 'a_renvoyer' | 'refusees';
+type EnvoiFiltre = 'all' | 'a_traiter' | 'hors_criteres' | 'envoyees' | 'a_renvoyer' | 'refusees';
 
 // Local date as YYYY-MM-DD (the API's disponible_du has the same format, so strings compare correctly)
 function ymd(d: Date) {
@@ -116,6 +117,7 @@ function alreadySent(c: candidature) {
 const STATUT_TABS: { value: EnvoiFiltre; label: string; color: string }[] = [
   { value: 'all', label: 'Toutes', color: 'var(--ink)' },
   { value: 'a_traiter', label: 'Nouvelles', color: 'var(--accent-secondary)' },
+  { value: 'hors_criteres', label: 'Hors critères', color: 'var(--accent-brick)' },
   { value: 'a_renvoyer', label: 'À renvoyer au CRM', color: 'var(--accent-amber)' },
   { value: 'envoyees', label: 'Envoyées au CRM', color: 'var(--accent-sage)' },
   { value: 'refusees', label: 'Refusées', color: 'var(--accent-brick)' },
@@ -126,7 +128,27 @@ function matchesStatut(c: candidature, tab: EnvoiFiltre) {
   if (tab === 'envoyees') return alreadySent(c);
   if (tab === 'a_renvoyer') return c.statut === 'preselectionnee' && !alreadySent(c);
   if (tab === 'refusees') return c.statut === 'refusee';
+  // Flagged by the AI pre-analysis and still undecided (a person reviews and refuses them)
+  if (tab === 'hors_criteres') return c.statut === 'nouvelle' && c.criteres?.hors_criteres === true;
   return true;
+}
+
+// Short summary of the AI pre-analysis, for the card
+function resumeAnalyse(c: candidature): { texte: string; titre?: string; couleur: string } | null {
+  switch (c.analyse_statut) {
+    case 'ok': {
+      const nbProjets = c.analyse.nb_projets ?? 0;
+      return {
+        texte: c.criteres?.raison || `${nbProjets} projet(s)`,
+        titre: c.analyse.resume,
+        couleur: c.criteres?.hors_criteres ? 'var(--accent-brick)' : 'var(--ink-soft)',
+      };
+    }
+    case 'en_cours': return { texte: 'Analyse IA en cours…', couleur: 'var(--ink-soft)' };
+    case 'non_analysable': return { texte: 'CV non analysable', titre: c.analyse_erreur, couleur: 'var(--ink-soft)' };
+    case 'erreur': return { texte: 'Analyse IA en échec', titre: c.analyse_erreur, couleur: 'var(--accent-amber)' };
+    default: return null;
+  }
 }
 
 function formatDateHeure(iso: string) {
@@ -155,6 +177,14 @@ export default function CandidaturesListPage() {
   const [selection, setSelection] = useState<Set<number>>(new Set());
   const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
 
+  // AI pre-analysis: thresholds of the "Hors critères" flag, and running analyses
+  const [criteres, setCriteres] = useState<CriteresTri | null>(null);
+  const [brouillonCriteres, setBrouillonCriteres] = useState<{ min_competences: string; min_projets: string } | null>(null);
+  const [analyseEnCours, setAnalyseEnCours] = useState<Set<number>>(new Set());
+  const [bulkAnalyse, setBulkAnalyse] = useState<{ done: number; total: number } | null>(null);
+  const [bulkRefus, setBulkRefus] = useState<{ done: number; total: number } | null>(null);
+  const [emailRefusGroupe, setEmailRefusGroupe] = useState(true);
+
   useEffect(() => {
     getAllCandidaturesAdmin()
       .then(setCandidatures)
@@ -162,9 +192,78 @@ export default function CandidaturesListPage() {
         toast.error('Impossible de charger les candidatures.')
       )
       .finally(() => setLoading(false));
+    getCriteresTri().then(setCriteres).catch(() => setCriteres(null));
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function remplacer(updated: candidature) {
+    setCandidatures((list) => list.map((c) => (c.id === updated.id ? updated : c)));
+    setSelectedCandidature((s) => (s && s.id === updated.id ? updated : s));
+  }
+
+  async function handleAnalyser(id: number) {
+    setAnalyseEnCours((s) => new Set(s).add(id));
+    try {
+      const updated = await analyserCandidature(id);
+      remplacer(updated);
+      if (updated.analyse_statut === 'ok') toast.success('Analyse terminée.');
+      else toast.error(updated.analyse_erreur || 'Analyse impossible.');
+    } catch {
+      toast.error('Impossible de lancer l’analyse.');
+    } finally {
+      setAnalyseEnCours((s) => { const n = new Set(s); n.delete(id); return n; });
+    }
+  }
+
+  // Undecided candidatures with a CV that were never analysed (or failed): analyse them one by one
+  const nonAnalysees = candidatures.filter(
+    (c) => c.statut === 'nouvelle' && c.has_cv && (c.analyse_statut === '' || c.analyse_statut === 'erreur')
+  );
+
+  async function handleAnalyserNonAnalysees() {
+    const ids = nonAnalysees.map((c) => c.id);
+    if (ids.length === 0) return;
+    let ok = 0;
+    setBulkAnalyse({ done: 0, total: ids.length });
+    for (const [i, id] of ids.entries()) {
+      try {
+        const updated = await analyserCandidature(id);
+        remplacer(updated);
+        if (updated.analyse_statut === 'ok') ok++;
+      } catch { /* the row keeps its state; counted below */ }
+      setBulkAnalyse({ done: i + 1, total: ids.length });
+    }
+    setBulkAnalyse(null);
+    if (ok === ids.length) toast.success(`${ok} candidature(s) analysée(s).`);
+    else toast.error(`${ok} analysée(s) sur ${ids.length}. Ouvrez les autres pour voir la raison.`);
+  }
+
+  async function handleSaveCriteres() {
+    if (!brouillonCriteres) return;
+    try {
+      const saved = await updateCriteresTri({
+        min_competences: Number(brouillonCriteres.min_competences),
+        min_projets: Number(brouillonCriteres.min_projets),
+      });
+      setCriteres(saved);
+      setBrouillonCriteres(null);
+      // the flag is computed by the server from the current thresholds: reload the list
+      setCandidatures(await getAllCandidaturesAdmin());
+      toast.success('Critères enregistrés.');
+    } catch {
+      toast.error('Critères invalides (nombres entre 0 et 20).');
+    }
+  }
+
+  async function handleToggleAnalyseAuto() {
+    if (!criteres) return;
+    try {
+      setCriteres(await updateCriteresTri({ analyse_auto: !criteres.analyse_auto }));
+    } catch {
+      toast.error('Impossible de modifier ce réglage.');
+    }
+  }
 
   async function handleDeleteCandidature(id: number) {
     try {
@@ -268,6 +367,31 @@ export default function CandidaturesListPage() {
     filteredCandidatures,
     [search, poste, niveaux.join(','), range?.join('~') ?? '', envoi].join('|'),
   );
+
+  // ── Refuse the flagged candidatures (Hors critères tab): a person reviews the list, then confirms ──
+  const horsCriteres = envoi === 'hors_criteres' ? filteredCandidatures : [];
+
+  async function handleRefuserHorsCriteres() {
+    const ids = horsCriteres.map((c) => c.id);
+    if (ids.length === 0) return;
+    const avecEmail = emailRefusGroupe ? ' et prévenir chaque candidat par e-mail' : ' sans envoyer d’e-mail';
+    if (!window.confirm(`Refuser ${ids.length} candidature(s) hors critères${avecEmail} ? Vérifiez la liste avant de confirmer.`)) return;
+    let ok = 0;
+    let emailsKo = 0;
+    setBulkRefus({ done: 0, total: ids.length });
+    for (const [i, id] of ids.entries()) {
+      try {
+        const res = await refuserCandidature(id, emailRefusGroupe);
+        remplacer(res.candidature);
+        ok++;
+        if (emailRefusGroupe && !res.email_envoye) emailsKo++;
+      } catch { /* already refused / sent to the CRM meanwhile: left as is */ }
+      setBulkRefus({ done: i + 1, total: ids.length });
+    }
+    setBulkRefus(null);
+    if (ok === ids.length && emailsKo === 0) toast.success(`${ok} candidature(s) refusée(s).`);
+    else toast.error(`${ok}/${ids.length} refusée(s)${emailsKo ? `, ${emailsKo} e-mail(s) non envoyé(s)` : ''}.`);
+  }
 
   // ── Bulk send ──
   // "Select all" picks the visible candidatures the CRM has not received yet. Anything hidden by a
@@ -528,8 +652,84 @@ export default function CandidaturesListPage() {
         </div>
       )}
 
+      {/* AI pre-analysis: criteria, analyse the backlog, and (Hors critères tab) refuse the flagged ones */}
+      {!loading && candidatures.length > 0 && (
+        <div className="mb-4 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0 text-sm">
+              <p className="font-medium">Pré-analyse IA des CV</p>
+              {criteres && !brouillonCriteres && (
+                <p className="mt-0.5 text-[var(--ink-soft)]">
+                  « Hors critères » = moins de <strong className="text-[var(--ink)]">{criteres.min_competences}</strong> compétence(s) de l’offre
+                  {' '}<strong className="text-[var(--ink)]">et</strong> moins de <strong className="text-[var(--ink)]">{criteres.min_projets}</strong> projet(s).
+                  {' '}<button type="button" className="underline underline-offset-2 hover:text-[var(--accent-secondary)]"
+                    onClick={() => setBrouillonCriteres({ min_competences: String(criteres.min_competences), min_projets: String(criteres.min_projets) })}>
+                    Modifier
+                  </button>
+                </p>
+              )}
+              {brouillonCriteres && (
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-[var(--ink-soft)]">
+                  Moins de
+                  <input type="number" min={0} max={20} value={brouillonCriteres.min_competences}
+                    onChange={(e) => setBrouillonCriteres({ ...brouillonCriteres, min_competences: e.target.value })}
+                    className="w-16 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-2 py-1 text-[var(--ink)]" />
+                  compétence(s) <strong className="text-[var(--ink)]">et</strong> moins de
+                  <input type="number" min={0} max={20} value={brouillonCriteres.min_projets}
+                    onChange={(e) => setBrouillonCriteres({ ...brouillonCriteres, min_projets: e.target.value })}
+                    className="w-16 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-2 py-1 text-[var(--ink)]" />
+                  projet(s)
+                  <button type="button" onClick={handleSaveCriteres}
+                    className="rounded-lg bg-[var(--accent-primary)] px-3 py-1 text-xs font-medium text-white">Enregistrer</button>
+                  <button type="button" onClick={() => setBrouillonCriteres(null)} className="text-xs">Annuler</button>
+                </div>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              {criteres && (
+                <label className="flex cursor-pointer items-center gap-2 text-xs text-[var(--ink-soft)]">
+                  <input type="checkbox" checked={criteres.analyse_auto} onChange={handleToggleAnalyseAuto} />
+                  Analyser automatiquement à la réception
+                </label>
+              )}
+              <button
+                type="button"
+                disabled={nonAnalysees.length === 0 || !!bulkAnalyse}
+                onClick={handleAnalyserNonAnalysees}
+                className="rounded-lg border border-[var(--line)] px-3 py-2 text-xs font-medium transition hover:border-[var(--accent-secondary)] hover:text-[var(--accent-secondary)] disabled:opacity-40"
+              >
+                {bulkAnalyse ? `Analyse ${bulkAnalyse.done}/${bulkAnalyse.total}…` : `Analyser les non analysées (${nonAnalysees.length})`}
+              </button>
+            </div>
+          </div>
+
+          {envoi === 'hors_criteres' && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] pt-4">
+              <p className="max-w-xl text-sm text-[var(--ink-soft)]">
+                Ces candidatures ne correspondent pas aux critères selon l’analyse IA. <strong className="text-[var(--ink)]">Rien n’est refusé
+                automatiquement</strong> : parcourez la liste (ouvrez un profil en cas de doute), puis refusez-les en une fois.
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="flex cursor-pointer items-center gap-2 text-sm">
+                  <input type="checkbox" checked={emailRefusGroupe} onChange={(e) => setEmailRefusGroupe(e.target.checked)} />
+                  Prévenir par e-mail
+                </label>
+                <button
+                  type="button"
+                  disabled={horsCriteres.length === 0 || !!bulkRefus}
+                  onClick={handleRefuserHorsCriteres}
+                  className="rounded-lg bg-[var(--accent-brick)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-40"
+                >
+                  {bulkRefus ? `Refus ${bulkRefus.done}/${bulkRefus.total}…` : `Refuser ces ${horsCriteres.length} candidature(s)`}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Bulk send */}
-      {!loading && filteredCandidatures.length > 0 && (
+      {!loading && filteredCandidatures.length > 0 && envoi !== 'hors_criteres' && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-4 py-3">
           <label className="flex cursor-pointer items-center gap-2 text-sm">
             <input
@@ -640,6 +840,14 @@ export default function CandidaturesListPage() {
                         {c.crm_envoye_le ? 'Envoyée au CRM' : 'À renvoyer au CRM'}
                       </span>
                     )}
+                    {c.statut === 'nouvelle' && c.criteres?.hors_criteres && (
+                      <span
+                        title={c.criteres.raison}
+                        className="shrink-0 rounded-full bg-[var(--accent-brick)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--accent-brick)]"
+                      >
+                        Hors critères
+                      </span>
+                    )}
                     {c.statut === 'refusee' && (
                       <span className="shrink-0 rounded-full bg-[var(--accent-brick)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--accent-brick)]">
                         Refusée
@@ -679,6 +887,16 @@ export default function CandidaturesListPage() {
                   {relativeDate(c.created_at)}
                 </time>
               </div>
+
+              {/* AI pre-analysis summary */}
+              {(() => {
+                const r = resumeAnalyse(c);
+                return r ? (
+                  <p className="-mt-1 mb-3 px-5 text-xs font-medium" style={{ color: r.couleur }} title={r.titre}>
+                    ✦ {r.texte}
+                  </p>
+                ) : null;
+              })()}
 
               {/* Message preview */}
               <div className="flex-1 px-5">
@@ -980,6 +1198,75 @@ export default function CandidaturesListPage() {
                       Non enregistré (candidature antérieure au formulaire de consentement).
                     </p>
                   )}
+                </div>
+              </section>
+
+              {/* AI pre-analysis: facts to help sort; the decision stays with a person */}
+              <section className="mt-7">
+                <p className="mb-3 text-[10px] uppercase tracking-wider text-[var(--ink-soft)] font-mono-num">
+                  Pré-analyse IA du CV
+                </p>
+                <div className="rounded-xl border border-[var(--line)] p-4 text-sm">
+                  {selectedCandidature.analyse_statut === 'ok' ? (
+                    <div className="space-y-3">
+                      {selectedCandidature.criteres?.hors_criteres !== null && (
+                        <p className={`font-medium ${selectedCandidature.criteres.hors_criteres ? 'text-[var(--accent-brick)]' : 'text-[var(--accent-sage)]'}`}>
+                          {selectedCandidature.criteres.hors_criteres ? '✕ Hors critères' : '✓ Correspond aux critères'}
+                          <span className="font-normal text-[var(--ink-soft)]"> · {selectedCandidature.criteres.raison}</span>
+                        </p>
+                      )}
+                      {selectedCandidature.criteres?.hors_criteres === null && selectedCandidature.criteres.raison && (
+                        <p className="text-[var(--ink-soft)]">{selectedCandidature.criteres.raison}</p>
+                      )}
+                      {selectedCandidature.analyse.resume && <p className="text-[var(--ink-soft)]">{selectedCandidature.analyse.resume}</p>}
+                      <div>
+                        <p className="mb-1 text-xs text-[var(--ink-soft)]">Compétences de l’offre trouvées dans le CV</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(selectedCandidature.analyse.competences ?? []).length > 0
+                            ? selectedCandidature.analyse.competences!.map((s) => (
+                                <span key={s} className="rounded-md bg-[var(--accent-sage)]/10 px-2 py-0.5 text-xs font-medium text-[var(--accent-sage)]">{s}</span>
+                              ))
+                            : <span className="text-xs text-[var(--ink-soft)]">Aucune</span>}
+                        </div>
+                      </div>
+                      {(selectedCandidature.analyse.technologies ?? []).length > 0 && (
+                        <div>
+                          <p className="mb-1 text-xs text-[var(--ink-soft)]">Technologies mentionnées</p>
+                          <p className="text-xs">{selectedCandidature.analyse.technologies!.join(' · ')}</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="mb-1 text-xs text-[var(--ink-soft)]">Projets repérés ({selectedCandidature.analyse.nb_projets ?? 0})</p>
+                        {(selectedCandidature.analyse.projets ?? []).length > 0 ? (
+                          <ul className="list-disc space-y-0.5 pl-5 text-xs">
+                            {selectedCandidature.analyse.projets!.map((p) => <li key={p}>{p}</li>)}
+                          </ul>
+                        ) : <p className="text-xs text-[var(--ink-soft)]">Aucun projet décrit dans le CV.</p>}
+                      </div>
+                      <p className="text-xs text-[var(--ink-soft)]">
+                        Aide au tri uniquement : vérifiez le CV en cas de doute, la décision vous revient.
+                      </p>
+                    </div>
+                  ) : selectedCandidature.analyse_statut === 'en_cours' ? (
+                    <p className="text-[var(--ink-soft)]">Analyse en cours…</p>
+                  ) : selectedCandidature.analyse_statut ? (
+                    <p className={selectedCandidature.analyse_statut === 'erreur' ? 'text-[var(--accent-amber)]' : 'text-[var(--ink-soft)]'}>
+                      {selectedCandidature.analyse_erreur || 'Analyse impossible.'}
+                    </p>
+                  ) : (
+                    <p className="text-[var(--ink-soft)]">Pas encore analysée.</p>
+                  )}
+
+                  <button
+                    type="button"
+                    disabled={analyseEnCours.has(selectedCandidature.id) || !selectedCandidature.has_cv}
+                    onClick={() => handleAnalyser(selectedCandidature.id)}
+                    className="mt-3 rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-medium transition hover:border-[var(--accent-secondary)] hover:text-[var(--accent-secondary)] disabled:opacity-40"
+                  >
+                    {analyseEnCours.has(selectedCandidature.id)
+                      ? 'Analyse…'
+                      : selectedCandidature.analyse_statut ? 'Relancer l’analyse' : 'Analyser le CV'}
+                  </button>
                 </div>
               </section>
 

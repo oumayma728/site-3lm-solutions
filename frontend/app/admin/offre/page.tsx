@@ -202,6 +202,9 @@ export default function OffresListPage() {
                   {s.label}
                 </span>
                 <div className="flex flex-wrap items-center justify-end gap-1.5">
+                  <Link href={`/admin/offre/modifier/${o.slug}`} className={btn}>
+                    Modifier
+                  </Link>
                   {o.actif && (
                     <a href={`/public/carrieres/${o.slug}`} target="_blank" rel="noreferrer" className={btn}>
                       Voir

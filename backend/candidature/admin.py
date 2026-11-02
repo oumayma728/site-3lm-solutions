@@ -4,7 +4,12 @@ from django.contrib import admin
 
 # Register your models here.
 from django.contrib import admin
-from .models import Candidature
+from .models import Candidature, CriteresTri
+
+
+@admin.register(CriteresTri)
+class CriteresTriAdmin(admin.ModelAdmin):
+    list_display = ['__str__', 'analyse_auto']
 
 
 

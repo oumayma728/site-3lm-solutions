@@ -2,6 +2,7 @@ import shutil
 import tempfile
 from datetime import date, timedelta
 from io import StringIO
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import requests
@@ -256,6 +257,78 @@ class DecisionEtEmailsTests(APITestCase):
     def test_anonymous_cannot_refuse(self):
         self.client.force_authenticate(None)
         self.assertIn(self.refuser().status_code, (401, 403))
+
+
+def reponse_ia(**entree):
+    bloc = SimpleNamespace(type='tool_use', input={
+        'competences_offre_presentes': [], 'technologies': [], 'projets': [], 'resume': 'r', **entree})
+    return SimpleNamespace(content=[bloc])
+
+
+@override_settings(MEDIA_ROOT=MEDIA, ANTHROPIC_API_KEY='sk-test', CV_ANALYSE_MODEL='modele-test')
+class AnalyseCvTests(APITestCase):
+    """AI pre-analysis: it flags candidatures outside the criteria, it never refuses them."""
+
+    def setUp(self):
+        self.admin = get_user_model().objects.create_user('rh-analyse', password='x')
+        self.offre = Offre.objects.create(titre='Dev web', type_offre='emploi', description='d', skills=['React', 'Django'])
+        self.c = Candidature.objects.create(
+            nom='Lina', email='lina@x.tn', telephone='20000000', offre=self.offre,
+            cv=SimpleUploadedFile('cv.pdf', b'%PDF-1.4 lina', content_type='application/pdf'), cv_nom_original='cv.pdf',
+        )
+        self.client.force_authenticate(self.admin)
+
+    def analyser(self):
+        return self.client.post(f'/api/candidature/{self.c.id}/analyser/')
+
+    @patch('candidature.analyse._appeler')
+    def test_outside_criteria_is_flagged_but_not_refused(self, appeler):
+        appeler.return_value = reponse_ia(competences_offre_presentes=['Vue'], projets=['Blog'])
+        r = self.analyser()
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data['analyse_statut'], 'ok')
+        self.assertTrue(r.data['criteres']['hors_criteres'])
+        self.assertEqual(r.data['analyse']['competences'], [])      # "Vue" is not an offer skill: dropped
+        self.c.refresh_from_db()
+        self.assertEqual(self.c.statut, 'nouvelle')                  # never refused automatically
+
+    @patch('candidature.analyse._appeler')
+    def test_a_matching_profile_is_not_flagged(self, appeler):
+        appeler.return_value = reponse_ia(competences_offre_presentes=['react'], projets=['A'])
+        self.assertFalse(self.analyser().data['criteres']['hors_criteres'])
+
+    @patch('candidature.analyse._appeler')
+    def test_thresholds_apply_immediately_to_existing_analyses(self, appeler):
+        appeler.return_value = reponse_ia(competences_offre_presentes=['React'], projets=['A'])
+        self.analyser()
+        self.client.patch('/api/candidature/criteres/', {'min_competences': 2}, format='json')
+        row = self.client.get(f'/api/candidature/{self.c.id}/').data
+        self.assertTrue(row['criteres']['hors_criteres'])            # 1 skill < 2 and 1 project < 2
+
+    def test_pdf_is_sent_as_a_document(self):
+        with patch('candidature.analyse._appeler', return_value=reponse_ia()) as appeler:
+            self.analyser()
+        bloc = appeler.call_args.args[0]
+        self.assertEqual((bloc['type'], bloc['source']['media_type']), ('document', 'application/pdf'))
+
+    def test_old_doc_format_is_left_to_a_person(self):
+        self.c.cv = SimpleUploadedFile('cv.doc', b'\xd0\xcf\x11\xe0 old word', content_type='application/msword')
+        self.c.cv_nom_original = 'cv.doc'
+        self.c.save()
+        r = self.analyser()
+        self.assertEqual(r.data['analyse_statut'], 'non_analysable')
+        self.assertIsNone(r.data['criteres']['hors_criteres'])
+
+    @patch('candidature.analyse._appeler', side_effect=OSError('network down'))
+    def test_ai_failure_is_recorded_not_raised(self, appeler):
+        r = self.analyser()
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data['analyse_statut'], 'erreur')
+
+    def test_criteria_are_validated_and_staff_only(self):
+        self.assertEqual(self.client.patch('/api/candidature/criteres/', {'min_projets': 99}, format='json').status_code, 400)
+        self.client.force_authenticate(None)
+        self.assertIn(self.client.get('/api/candidature/criteres/').status_code, (401, 403))
 
 
 @override_settings(MEDIA_ROOT=MEDIA, EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',

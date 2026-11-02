@@ -90,6 +90,14 @@ export function PrivacyFr() {
           moment : votre candidature est alors supprimée.
         </p>
         <p>
+          <strong>Pré-analyse à la réception.</strong> Lorsque vous postulez à une offre, votre CV est
+          transmis à notre fournisseur d’IA, qui relève les compétences demandées par l’offre présentes
+          dans votre CV et les projets que vous y décrivez. Ce relevé aide l’équipe à trier les
+          candidatures (par exemple pour repérer celles qui ne correspondent pas aux critères de l’offre) :{' '}
+          <strong>il ne refuse jamais une candidature à lui seul</strong>, une personne de l’équipe
+          prend toujours la décision et peut consulter votre CV complet.
+        </p>
+        <p>
           <strong>Outil interne de suivi des stagiaires.</strong> Si votre candidature est
           présélectionnée, elle est transmise, avec votre CV, à notre outil interne de gestion
           des stagiaires, utilisé par la même équipe.
@@ -145,9 +153,10 @@ export function PrivacyFr() {
           <li><strong>Notre messagerie</strong>, par laquelle nous recevons vos candidatures et demandes ;</li>
           <li>
             <strong>Anthropic</strong>, fournisseur des modèles d’IA que nous utilisons : il reçoit
-            les messages que vous écrivez à l’assistant, pour générer ses réponses, et, pour les
-            candidatures présélectionnées, le texte du CV et du message de motivation lorsqu’une
-            analyse est demandée (voir « Candidatures »).
+            les messages que vous écrivez à l’assistant, pour générer ses réponses ; le CV joint à
+            chaque candidature, pour la pré-analyse décrite plus haut ; et, pour les candidatures
+            présélectionnées, le texte du CV et du message de motivation lorsqu’une analyse est
+            demandée dans notre outil interne (voir « Candidatures »).
           </li>
         </ul>
       </section>
@@ -270,6 +279,13 @@ export function PrivacyEn() {
           recruitment. You can withdraw your consent at any time: your application is then deleted.
         </p>
         <p>
+          <strong>Pre-analysis on receipt.</strong> When you apply to an offer, your CV is sent to our AI
+          provider, which lists the skills required by the offer that appear in your CV and the projects
+          you describe. This helps the team sort applications (for example to spot those that do not
+          meet the offer’s criteria): <strong>it never rejects an application on its own</strong> — a
+          person on the team always makes the decision and can read your full CV.
+        </p>
+        <p>
           <strong>Internal intern-tracking tool.</strong> If your application is shortlisted, it is
           sent, together with your CV, to our internal intern-management tool, used by the same team.
         </p>
@@ -322,8 +338,9 @@ export function PrivacyEn() {
           <li><strong>Our email provider</strong>, through which we receive your applications and requests;</li>
           <li>
             <strong>Anthropic</strong>, provider of the AI models we use: it receives the messages
-            you write to the assistant, to generate its answers, and, for shortlisted applications,
-            the text of the CV and motivation message when an analysis is requested (see “Job
+            you write to the assistant, to generate its answers; the CV attached to each application,
+            for the pre-analysis described above; and, for shortlisted applications, the text of the
+            CV and motivation message when an analysis is requested in our internal tool (see “Job
             applications”).
           </li>
         </ul>
