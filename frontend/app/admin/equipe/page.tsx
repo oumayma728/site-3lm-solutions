@@ -11,6 +11,7 @@ import {
 
 import PageHeader from '@/components/PageHeader';
 import { useToast } from '@/components/ToastProvider';
+import { correspond } from '@/lib/recherche';
 import { Pagination, usePagination } from '@/components/Pagination';
 
 export default function EquipeListPage() {
@@ -31,17 +32,9 @@ export default function EquipeListPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const filteredEquipes = equipes.filter((employee) => {
-        const query = search.toLowerCase();
-
-        return (
-            employee.nom?.toLowerCase().includes(query) ||
-            employee.prenom?.toLowerCase().includes(query) ||
-            employee.email?.toLowerCase().includes(query) ||
-            employee.poste?.toLowerCase().includes(query) ||
-            employee.profil?.toLowerCase().includes(query)
-        );
-    });
+    const filteredEquipes = equipes.filter((employee) =>
+        correspond(search, employee.prenom, employee.nom, employee.email, employee.poste, employee.profil)
+    );
 
     const pager = usePagination(filteredEquipes, search);
 

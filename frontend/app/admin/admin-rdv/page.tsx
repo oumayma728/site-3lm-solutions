@@ -14,6 +14,7 @@ import { STATUT_RDV_CONFIG, TYPE_RDV_CONFIG } from '@/lib/statusRdv';
 import PageHeader from '@/components/PageHeader';
 import RdvStatusBadge from '@/components/RdvStatusBadge';
 import { useToast } from '@/components/ToastProvider';
+import { correspond } from '@/lib/recherche';
 import { Pagination, usePagination } from '@/components/Pagination';
 
 const STATUT_FILTERS = ['tous', ...Object.keys(STATUT_RDV_CONFIG)] as const;
@@ -166,10 +167,7 @@ export default function RendezVousListPage() {
 
   const filtered = useMemo(() => {
     return list.filter((r) => {
-      const matchSearch =
-        !search ||
-        r.client_nom?.toLowerCase().includes(search.toLowerCase()) ||
-        r.client_entreprise?.toLowerCase().includes(search.toLowerCase());
+      const matchSearch = correspond(search, r.client_nom, r.client_entreprise);
       const matchStatut = statutFilter === 'tous' || r.statut === statutFilter;
       return matchSearch && matchStatut;
     });

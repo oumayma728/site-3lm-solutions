@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import PageHeader from '@/components/PageHeader';
 import { useToast } from '@/components/ToastProvider';
+import { correspond } from '@/lib/recherche';
 import { Pagination, usePagination } from '@/components/Pagination';
 import {
   createCompte, getComptes, getMoi, messageErreur, updateCompte,
@@ -130,7 +131,9 @@ export default function ComptesPage() {
     }
   };
 
-  const pager = usePagination(comptes);
+  const [recherche, setRecherche] = useState('');
+  const comptesFiltres = comptes.filter((c) => correspond(recherche, c.first_name, c.last_name, c.username, c.email));
+  const pager = usePagination(comptesFiltres, recherche);
 
   if (!loading && moi && !moi.is_superuser) {
     return (
@@ -232,10 +235,22 @@ export default function ComptesPage() {
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface)]">
-          <div className="flex items-center justify-between border-b border-[var(--line)] bg-[var(--paper)] px-5 py-3 text-xs font-medium text-[var(--ink-soft)]">
-            <span>{comptes.length} compte{comptes.length > 1 ? 's' : ''}</span>
-            <span>{actifs} actif{actifs > 1 ? 's' : ''}</span>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] bg-[var(--paper)] px-5 py-3 text-xs font-medium text-[var(--ink-soft)]">
+            <span>
+              {comptes.length} compte{comptes.length > 1 ? 's' : ''} · {actifs} actif{actifs > 1 ? 's' : ''}
+            </span>
+            <input
+              type="search"
+              value={recherche}
+              onChange={(e) => setRecherche(e.target.value)}
+              placeholder="Rechercher un nom, un identifiant, un e-mail…"
+              aria-label="Rechercher un compte"
+              className="w-full rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-1.5 text-sm font-normal text-[var(--ink)] outline-none focus:border-[var(--accent-primary)] sm:w-72"
+            />
           </div>
+          {comptesFiltres.length === 0 && (
+            <p className="px-5 py-8 text-center text-sm text-[var(--ink-soft)]">Aucun compte ne correspond à « {recherche} ».</p>
+          )}
 
           {pager.pageItems.map((c) => {
             const estMoi = c.id === moi?.id;
