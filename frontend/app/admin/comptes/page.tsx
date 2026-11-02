@@ -134,7 +134,7 @@ export default function ComptesPage() {
 
   if (!loading && moi && !moi.is_superuser) {
     return (
-      <div className="mx-auto w-full max-w-4xl px-8 py-10">
+      <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-8 sm:py-10">
         <PageHeader eyebrow="Espace équipe" title="Accès & comptes" />
         <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] px-6 py-10 text-center text-sm text-[var(--ink-soft)]">
           Cette page est réservée aux administrateurs. Demandez à un administrateur de créer ou modifier un compte.
@@ -146,7 +146,7 @@ export default function ComptesPage() {
   const actifs = comptes.filter((c) => c.is_active).length;
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-8 py-10">
+    <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-8 sm:py-10">
       <PageHeader
         eyebrow="Espace équipe"
         title="Accès & comptes"

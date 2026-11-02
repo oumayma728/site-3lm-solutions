@@ -94,7 +94,7 @@ function NouveauDevisForm() {
   };
 
   return (
-    <div className="mx-auto w-full px-8 py-10 max-w-3xl">
+    <div className="mx-auto w-full px-4 py-6 sm:px-8 sm:py-10 max-w-3xl">
       <Link
         href="/admin/devis"
         className="text-xs font-mono-num text-[var(--ink-soft)] hover:text-[var(--accent-primary)] transition-colors"

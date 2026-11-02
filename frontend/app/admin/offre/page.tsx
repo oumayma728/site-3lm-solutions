@@ -17,7 +17,8 @@ function statutDe(o: Offre) {
   return { label: 'Ouverte', color: 'var(--accent-sage)' };
 }
 
-const COLS = 'grid grid-cols-[minmax(0,1fr)_90px_130px_100px_auto] gap-4';
+// min-w: on phones the table scrolls sideways inside its card instead of squeezing the columns
+const COLS = 'grid min-w-[760px] grid-cols-[minmax(0,1fr)_90px_130px_100px_auto] gap-4';
 const btn =
   'rounded-lg border border-[var(--line)] bg-[var(--surface)] px-2.5 py-1.5 text-xs font-medium transition-colors hover:border-[var(--accent-secondary)] hover:text-[var(--accent-secondary)] disabled:opacity-40';
 
@@ -81,7 +82,7 @@ export default function OffresListPage() {
   };
 
   return (
-    <div className="mx-auto w-full px-8 py-10 max-w-7xl">
+    <div className="mx-auto w-full px-4 py-6 sm:px-8 sm:py-10 max-w-7xl">
       <PageHeader
         eyebrow="Carrières & Stages"
         title="Offres"
@@ -172,7 +173,7 @@ export default function OffresListPage() {
             : 'Aucune offre active dans cette catégorie.'}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface)]">
+        <div className="overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--surface)]">
           <div className={`${COLS} border-b border-[var(--line)] bg-[var(--paper)] px-5 py-3 text-xs font-medium text-[var(--ink-soft)]`}>
             <span>Titre</span>
             <span>Type</span>

@@ -93,7 +93,7 @@ class CriteresTri(models.Model):
 
     A candidature is OUTSIDE the criteria when BOTH are true:
       fewer than `min_competences` of the offer's required skills appear in the CV, AND
-      fewer than `min_projets` projects are described in it.
+      fewer than `min_projets` RELEVANT projects (using the offer's skills or in its field) are described in it.
     """
     min_competences = models.PositiveSmallIntegerField(default=1)
     min_projets = models.PositiveSmallIntegerField(default=2)

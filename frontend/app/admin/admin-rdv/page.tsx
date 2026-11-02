@@ -240,7 +240,7 @@ export default function RendezVousListPage() {
   const rowActions = { onConfirmer: handleConfirmer, onAnnuler: handleAnnuler, onTerminer: handleTerminer, onDelete: handleDelete };
 
   return (
-    <div className="mx-auto w-full px-8 py-10 max-w-7xl">
+    <div className="mx-auto w-full px-4 py-6 sm:px-8 sm:py-10 max-w-7xl">
       <PageHeader
         eyebrow="Ligne directe"
         title="Rendez-vous"
@@ -267,7 +267,7 @@ export default function RendezVousListPage() {
       />
 
       {!loading && list.length > 0 && (
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-8">
           {[
             { label: 'Total', value: stats.total },
             { label: 'Demandés', value: stats.demandes },

@@ -87,7 +87,7 @@ function NouveauRendezVousForm() {
   };
 
   return (
-    <div className="mx-auto w-full px-8 py-10 max-w-3xl">
+    <div className="mx-auto w-full px-4 py-6 sm:px-8 sm:py-10 max-w-3xl">
       <Link
         href="/admin/admin-rdv"
         className="text-xs font-mono-num text-[var(--ink-soft)] hover:text-[var(--accent-secondary)] transition-colors"
@@ -239,7 +239,7 @@ function NouveauRendezVousForm() {
 
 export default function NouveauRendezVousPage() {
   return (
-    <Suspense fallback={<div className="px-8 py-10 text-sm text-[var(--ink-soft)]">Chargement...</div>}>
+    <Suspense fallback={<div className="px-4 py-6 sm:px-8 sm:py-10 text-sm text-[var(--ink-soft)]">Chargement...</div>}>
       <NouveauRendezVousForm />
     </Suspense>
   );

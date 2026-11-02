@@ -113,23 +113,31 @@ function alreadySent(c: candidature) {
   return !!c.crm_envoye_le;
 }
 
-// Status tabs: where each candidature stands in the pre-selection / CRM pipeline
+// Status tabs: where each candidature stands in the pre-selection / CRM pipeline.
+// "Hors critères" is set apart at the end: those candidatures appear ONLY there.
 const STATUT_TABS: { value: EnvoiFiltre; label: string; color: string }[] = [
   { value: 'all', label: 'Toutes', color: 'var(--ink)' },
   { value: 'a_traiter', label: 'Nouvelles', color: 'var(--accent-secondary)' },
-  { value: 'hors_criteres', label: 'Hors critères', color: 'var(--accent-brick)' },
   { value: 'a_renvoyer', label: 'À renvoyer au CRM', color: 'var(--accent-amber)' },
   { value: 'envoyees', label: 'Envoyées au CRM', color: 'var(--accent-sage)' },
   { value: 'refusees', label: 'Refusées', color: 'var(--accent-brick)' },
+  { value: 'hors_criteres', label: 'Hors critères', color: 'var(--accent-brick)' },
 ];
 
+// Flagged by the AI pre-analysis and still undecided: kept apart, in the "Hors critères" tab only.
+// They leave it when a person decides (refused → Refusées, sent to the CRM → Envoyées) or when the
+// criteria are relaxed (back to Nouvelles).
+function estHorsCriteres(c: candidature) {
+  return c.statut === 'nouvelle' && c.criteres?.hors_criteres === true;
+}
+
 function matchesStatut(c: candidature, tab: EnvoiFiltre) {
+  if (tab === 'hors_criteres') return estHorsCriteres(c);
+  if (estHorsCriteres(c)) return false;   // not in "Toutes" nor "Nouvelles"
   if (tab === 'a_traiter') return c.statut === 'nouvelle';
   if (tab === 'envoyees') return alreadySent(c);
   if (tab === 'a_renvoyer') return c.statut === 'preselectionnee' && !alreadySent(c);
   if (tab === 'refusees') return c.statut === 'refusee';
-  // Flagged by the AI pre-analysis and still undecided (a person reviews and refuses them)
-  if (tab === 'hors_criteres') return c.statut === 'nouvelle' && c.criteres?.hors_criteres === true;
   return true;
 }
 
@@ -217,8 +225,12 @@ export default function CandidaturesListPage() {
   }
 
   // Undecided candidatures with a CV that were never analysed (or failed): analyse them one by one
+  // …and those analysed before project relevance was assessed (they need a re-run to use it)
   const nonAnalysees = candidatures.filter(
-    (c) => c.statut === 'nouvelle' && c.has_cv && (c.analyse_statut === '' || c.analyse_statut === 'erreur')
+    (c) => c.statut === 'nouvelle' && c.has_cv && (
+      c.analyse_statut === '' || c.analyse_statut === 'erreur'
+      || (c.analyse_statut === 'ok' && c.analyse?.nb_projets_pertinents === undefined)
+    )
   );
 
   async function handleAnalyserNonAnalysees() {
@@ -461,7 +473,7 @@ export default function CandidaturesListPage() {
   }
 
   return (
-    <div className="mx-auto w-full px-8 py-10 max-w-7xl">
+    <div className="mx-auto w-full px-4 py-6 sm:px-8 sm:py-10 max-w-7xl">
       <PageHeader
         eyebrow="Recrutement"
         title="Candidatures"
@@ -469,7 +481,7 @@ export default function CandidaturesListPage() {
 
       {/* Header / search */}
       {!loading && candidatures.length > 0 && (
-        <div className="mt-8 mb-6 flex items-center justify-between gap-4">
+        <div className="mt-8 mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div>
             <p className="text-sm text-[var(--ink-soft)]">
               {candidatures.length}{' '}
@@ -479,12 +491,12 @@ export default function CandidaturesListPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <select
               value={poste}
               onChange={(e) => setPoste(e.target.value)}
               aria-label="Filtrer par poste"
-              className="w-56 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-4 py-2.5 text-sm outline-none transition focus:border-[var(--accent-secondary)]"
+              className="w-full sm:w-56 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-4 py-2.5 text-sm outline-none transition focus:border-[var(--accent-secondary)]"
             >
               <option value="">Tous les postes</option>
               {postes.map((p) => (
@@ -494,7 +506,7 @@ export default function CandidaturesListPage() {
               ))}
             </select>
 
-            <div className="relative w-72">
+            <div className="relative w-full sm:w-72">
               <input
                 type="text"
                 placeholder="Rechercher un candidat..."
@@ -524,7 +536,7 @@ export default function CandidaturesListPage() {
                 onClick={() => setEnvoi(tab.value)}
                 className={`relative -mb-px flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
                   active ? '' : 'border-transparent text-[var(--ink-soft)] hover:text-[var(--ink)]'
-                }`}
+                } ${tab.value === 'hors_criteres' ? 'ml-auto' : ''}`}
                 style={active ? { borderColor: tab.color, color: tab.color } : undefined}
               >
                 {tab.value !== 'all' && (
@@ -661,7 +673,7 @@ export default function CandidaturesListPage() {
               {criteres && !brouillonCriteres && (
                 <p className="mt-0.5 text-[var(--ink-soft)]">
                   « Hors critères » = moins de <strong className="text-[var(--ink)]">{criteres.min_competences}</strong> compétence(s) de l’offre
-                  {' '}<strong className="text-[var(--ink)]">et</strong> moins de <strong className="text-[var(--ink)]">{criteres.min_projets}</strong> projet(s).
+                  {' '}<strong className="text-[var(--ink)]">et</strong> moins de <strong className="text-[var(--ink)]">{criteres.min_projets}</strong> projet(s) pertinent(s) (qui utilisent les compétences ou le domaine de l’offre).
                   {' '}<button type="button" className="underline underline-offset-2 hover:text-[var(--accent-secondary)]"
                     onClick={() => setBrouillonCriteres({ min_competences: String(criteres.min_competences), min_projets: String(criteres.min_projets) })}>
                     Modifier
@@ -678,7 +690,7 @@ export default function CandidaturesListPage() {
                   <input type="number" min={0} max={20} value={brouillonCriteres.min_projets}
                     onChange={(e) => setBrouillonCriteres({ ...brouillonCriteres, min_projets: e.target.value })}
                     className="w-16 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-2 py-1 text-[var(--ink)]" />
-                  projet(s)
+                  projet(s) pertinent(s)
                   <button type="button" onClick={handleSaveCriteres}
                     className="rounded-lg bg-[var(--accent-primary)] px-3 py-1 text-xs font-medium text-white">Enregistrer</button>
                   <button type="button" onClick={() => setBrouillonCriteres(null)} className="text-xs">Annuler</button>
@@ -698,7 +710,7 @@ export default function CandidaturesListPage() {
                 onClick={handleAnalyserNonAnalysees}
                 className="rounded-lg border border-[var(--line)] px-3 py-2 text-xs font-medium transition hover:border-[var(--accent-secondary)] hover:text-[var(--accent-secondary)] disabled:opacity-40"
               >
-                {bulkAnalyse ? `Analyse ${bulkAnalyse.done}/${bulkAnalyse.total}…` : `Analyser les non analysées (${nonAnalysees.length})`}
+                {bulkAnalyse ? `Analyse ${bulkAnalyse.done}/${bulkAnalyse.total}…` : `Analyser les non analysées / à mettre à jour (${nonAnalysees.length})`}
               </button>
             </div>
           </div>
@@ -1236,10 +1248,32 @@ export default function CandidaturesListPage() {
                         </div>
                       )}
                       <div>
-                        <p className="mb-1 text-xs text-[var(--ink-soft)]">Projets repérés ({selectedCandidature.analyse.nb_projets ?? 0})</p>
+                        <p className="mb-1 text-xs text-[var(--ink-soft)]">
+                          Projets repérés ({selectedCandidature.analyse.nb_projets ?? 0}
+                          {selectedCandidature.analyse.nb_projets_pertinents !== undefined
+                            && `, dont ${selectedCandidature.analyse.nb_projets_pertinents} pertinent(s) pour l’offre`})
+                        </p>
                         {(selectedCandidature.analyse.projets ?? []).length > 0 ? (
-                          <ul className="list-disc space-y-0.5 pl-5 text-xs">
-                            {selectedCandidature.analyse.projets!.map((p) => <li key={p}>{p}</li>)}
+                          <ul className="space-y-1 text-xs">
+                            {selectedCandidature.analyse.projets!.map((p, i) => {
+                              // older analyses stored plain titles, without relevance
+                              const projet = typeof p === 'string' ? { titre: p, pertinent: undefined, raison: '' } : p;
+                              return (
+                                <li key={i} className="flex items-start gap-2">
+                                  <span
+                                    className="mt-0.5 shrink-0 font-semibold"
+                                    style={{ color: projet.pertinent ? 'var(--accent-sage)' : 'var(--ink-soft)' }}
+                                    aria-label={projet.pertinent ? 'Pertinent' : projet.pertinent === false ? 'Non pertinent' : 'Pertinence non évaluée'}
+                                  >
+                                    {projet.pertinent ? '✓' : projet.pertinent === false ? '–' : '•'}
+                                  </span>
+                                  <span>
+                                    {projet.titre}
+                                    {projet.raison && <span className="text-[var(--ink-soft)]"> · {projet.raison}</span>}
+                                  </span>
+                                </li>
+                              );
+                            })}
                           </ul>
                         ) : <p className="text-xs text-[var(--ink-soft)]">Aucun projet décrit dans le CV.</p>}
                       </div>

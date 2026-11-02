@@ -40,9 +40,23 @@ OUTIL = {
                 'description': 'Technologies, langages et outils mentionnés dans le CV (20 au maximum).',
             },
             'projets': {
-                'type': 'array', 'items': {'type': 'string'},
-                'description': 'Titre court de chaque projet distinct décrit dans le CV (académique, personnel, '
-                               'professionnel ou de stage). Un même projet ne compte qu\'une fois.',
+                'type': 'array',
+                'description': 'Chaque projet distinct décrit dans le CV (académique, personnel, professionnel '
+                               'ou de stage). Un même projet ne compte qu\'une fois.',
+                'items': {
+                    'type': 'object',
+                    'properties': {
+                        'titre': {'type': 'string', 'description': 'Titre court du projet.'},
+                        'pertinent': {
+                            'type': 'boolean',
+                            'description': "true si le projet utilise au moins une compétence recherchée par l'offre, "
+                                           "ou relève clairement du même domaine que l'offre (web, mobile, IA, data, "
+                                           "DevOps…). false sinon.",
+                        },
+                        'raison': {'type': 'string', 'description': 'Quelques mots : pourquoi il est pertinent ou non (ex. « utilise React »).'},
+                    },
+                    'required': ['titre', 'pertinent', 'raison'],
+                },
             },
             'resume': {
                 'type': 'string',
@@ -108,10 +122,11 @@ def competences_offre(candidature: Candidature) -> list[str]:
     return [s.strip() for s in (offre.skills if offre else []) if isinstance(s, str) and s.strip()]
 
 
-def _appeler(contenu_cv: dict, competences: list[str], titre_offre: str):
+def _appeler(contenu_cv: dict, competences: list[str], titre_offre: str, departement: str = ''):
     client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY, timeout=60, max_retries=2)
     consigne = (
         f"Offre : {titre_offre or 'non précisée'}\n"
+        f"Domaine / département de l'offre : {departement or 'non précisé'}\n"
         f"Compétences recherchées par l'offre : {', '.join(competences) if competences else '(aucune)'}\n\n"
         "Analyse le CV joint et appelle l'outil."
     )
@@ -134,12 +149,23 @@ def _nettoyer(brut: dict, competences: list[str]) -> dict:
         vraie = par_cle.get(str(c).strip().lower())
         if vraie and vraie not in trouvees:
             trouvees.append(vraie)
-    projets = [str(p).strip()[:120] for p in (brut.get('projets') or []) if str(p).strip()][:15]
+    projets = []
+    for p in brut.get('projets') or []:
+        if isinstance(p, dict):
+            titre = str(p.get('titre') or '').strip()[:120]
+            # only an explicit true counts: when in doubt, the project is not counted as relevant
+            pertinent, raison = p.get('pertinent') is True, str(p.get('raison') or '').strip()[:120]
+        else:
+            titre, pertinent, raison = str(p).strip()[:120], False, ''
+        if titre:
+            projets.append({'titre': titre, 'pertinent': pertinent, 'raison': raison})
+    projets = projets[:15]
     return {
         'competences': trouvees,
         'technologies': [str(t).strip()[:60] for t in (brut.get('technologies') or []) if str(t).strip()][:20],
         'projets': projets,
         'nb_projets': len(projets),
+        'nb_projets_pertinents': sum(1 for p in projets if p['pertinent']),
         'resume': str(brut.get('resume') or '').strip()[:500],
     }
 
@@ -156,7 +182,9 @@ def analyser(candidature: Candidature) -> Candidature:
     competences = competences_offre(candidature)
     try:
         contenu = _contenu_cv(candidature)
-        reponse = _appeler(contenu, competences, candidature.offre.titre if candidature.offre else candidature.reference)
+        offre = candidature.offre
+        reponse = _appeler(contenu, competences, offre.titre if offre else candidature.reference,
+                           offre.departement if offre else '')
         bloc = next((b for b in reponse.content if getattr(b, 'type', '') == 'tool_use'), None)
         if bloc is None:
             raise AnalyseImpossible("L'IA n'a pas renvoyé d'évaluation. Relancez l'analyse.")
@@ -188,9 +216,17 @@ def evaluer_criteres(candidature: Candidature, criteres: CriteresTri) -> dict:
     competences = competences_offre(candidature)
     if not competences:
         return {'hors_criteres': None, 'raison': "L'offre n'a pas de compétences recherchées : critère technique non évaluable."}
-    nb_comp, nb_proj = len(a.get('competences') or []), int(a.get('nb_projets') or 0)
+    nb_comp = len(a.get('competences') or [])
+    if 'nb_projets_pertinents' in a:
+        # Only the projects relevant to the offer count (its skills or its field)
+        nb_proj = int(a.get('nb_projets_pertinents') or 0)
+        detail_projets = f"{nb_proj} projet(s) pertinent(s) sur {int(a.get('nb_projets') or 0)}"
+    else:
+        # Analysis made before relevance was assessed: plain count until it is re-run
+        nb_proj = int(a.get('nb_projets') or 0)
+        detail_projets = f"{nb_proj} projet(s) (pertinence non évaluée : relancez l'analyse)"
     hors = nb_comp < criteres.min_competences and nb_proj < criteres.min_projets
-    raison = f"{nb_comp}/{len(competences)} compétence(s) de l'offre · {nb_proj} projet(s)"
+    raison = f"{nb_comp}/{len(competences)} compétence(s) de l'offre · {detail_projets}"
     return {'hors_criteres': hors, 'raison': raison}
 
 

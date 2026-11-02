@@ -121,7 +121,9 @@ const navGroups = [
   },
 ];
 
-export default function Sidebar() {
+// On phones (< md) the sidebar is a slide-in drawer opened from the top bar (AdminGate);
+// on larger screens it is always visible, as before.
+export default function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const [moi, setMoi] = useState<Moi | null>(null);
@@ -139,7 +141,22 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-64 shrink-0 bg-[var(--surface)] border-r border-[var(--line)] flex flex-col justify-between">
+    <aside
+      className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] overflow-y-auto transition-transform duration-200 md:sticky md:top-0 md:z-auto md:h-screen md:w-64 md:max-w-none md:translate-x-0 ${
+        open ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+      } shrink-0 bg-[var(--surface)] border-r border-[var(--line)] flex flex-col justify-between`}
+      aria-label="Menu de l’espace équipe"
+    >
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Fermer le menu"
+          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-lg text-xl text-[var(--ink-soft)] hover:bg-[var(--line)]/50 md:hidden"
+        >
+          ×
+        </button>
+      )}
       <div className="flex flex-col min-h-0">
         <Link href="/admin/dashboard" className="px-6 py-6 flex items-center gap-3 border-b border-[var(--line)] shrink-0">
           {/* Logo.tsx colore ses lettres avec --a2 / --ink / --muted, définis seulement
