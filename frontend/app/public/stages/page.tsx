@@ -94,9 +94,11 @@ export default async function StagesPage() {
           <p>{t.lead}</p>
         </section>
 
+        {offresStages.length === 0 && (
         <section className="stages-programmes">
           <ProgramSwitcher offres={offresStages} />
         </section>
+        )}
 
         <section className="stages-parcours">
           <div className="section-marker"><span />{t.journeyMarker}</div>
