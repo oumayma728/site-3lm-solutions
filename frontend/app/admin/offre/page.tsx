@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { getAllOffresAdmin, deleteOffre, updateOffre, type Offre } from '@/lib/offres';
 import PageHeader from '@/components/PageHeader';
 import { useToast } from '@/components/ToastProvider';
+import { correspond } from '@/lib/recherche';
 import { Pagination, usePagination } from '@/components/Pagination';
 
 type Vue = 'actives' | 'archivees';
@@ -28,6 +29,7 @@ export default function OffresListPage() {
   const [loading, setLoading] = useState(true);
   const [vue, setVue] = useState<Vue>('actives');
   const [type, setType] = useState<(typeof TYPES)[number]>('tous');
+  const [recherche, setRecherche] = useState('');
   const [busySlug, setBusySlug] = useState<string | null>(null);
 
   useEffect(() => {
@@ -38,11 +40,18 @@ export default function OffresListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const parType = useMemo(() => offres.filter((o) => type === 'tous' || o.type_offre === type), [offres, type]);
+  // Type + search (title, department, location, skills); the Actives/Archivées counts follow both
+  const parType = useMemo(
+    () => offres.filter((o) =>
+      (type === 'tous' || o.type_offre === type)
+      && correspond(recherche, o.titre, o.departement, o.location, (o.skills ?? []).join(' '))
+    ),
+    [offres, type, recherche]
+  );
   const filtered = parType.filter((o) => (vue === 'actives' ? o.actif : !o.actif));
   const nbActives = parType.filter((o) => o.actif).length;
   const nbArchivees = parType.length - nbActives;
-  const pager = usePagination(filtered, `${vue}|${type}`);
+  const pager = usePagination(filtered, `${vue}|${type}|${recherche}`);
 
   const modifier = async (o: Offre, data: { actif?: boolean; cloturee?: boolean }, succes: string) => {
     setBusySlug(o.slug);
@@ -131,7 +140,15 @@ export default function OffresListPage() {
               );
             })}
           </nav>
-          <div className="mb-3 flex gap-1.5">
+          <div className="mb-3 flex flex-wrap items-center gap-1.5">
+            <input
+              type="search"
+              value={recherche}
+              onChange={(e) => setRecherche(e.target.value)}
+              placeholder="Rechercher une offre…"
+              aria-label="Rechercher une offre"
+              className="mr-1 w-full rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-1.5 text-sm outline-none focus:border-[var(--accent-primary)] sm:w-56"
+            />
             {TYPES.map((t) => (
               <button
                 key={t}
@@ -203,6 +220,9 @@ export default function OffresListPage() {
                   {s.label}
                 </span>
                 <div className="flex flex-wrap items-center justify-end gap-1.5">
+                  <Link href={`/admin/candidature?offre=${o.id}`} className={btn}>
+                    Candidatures
+                  </Link>
                   <Link href={`/admin/offre/modifier/${o.slug}`} className={btn}>
                     Modifier
                   </Link>

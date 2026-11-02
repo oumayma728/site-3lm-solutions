@@ -9,6 +9,7 @@ import PageHeader from '@/components/PageHeader';
 import StatusBadge from '@/components/StatusBadge';
 import { formatMontant, deleteDevis } from '@/lib/devis';
 import { useToast } from '@/components/ToastProvider';
+import { correspond } from '@/lib/recherche';
 import { Pagination, usePagination } from '@/components/Pagination';
 
 const STATUT_FILTERS = ['tous', ...Object.keys(STATUT_CONFIG)];
@@ -65,9 +66,8 @@ export default function DevisListPage() {
 
   // Search only: each status tab shows how many matching devis it holds
   const matching = useMemo(() => {
-    const q = search.toLowerCase();
     return devisList.filter(
-      (d) => !q || d.client_nom?.toLowerCase().includes(q) || d.besoins_client.toLowerCase().includes(q) || d.numero?.toLowerCase().includes(q)
+      (d) => correspond(search, d.client_nom, d.numero, d.besoins_client)
     );
   }, [devisList, search]);
 

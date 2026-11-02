@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { getAllOffresAdmin, type Offre } from '@/lib/offres';
 import {
   getAllCandidaturesAdmin, DeleteCandidatureAdmin, accepterCandidature, refuserCandidature, openCandidatureCv,
   analyserCandidature, getCriteresTri, updateCriteresTri, type CriteresTri,
@@ -9,6 +11,7 @@ import {
 
 import PageHeader from '@/components/PageHeader';
 import { useToast } from '@/components/ToastProvider';
+import { correspond } from '@/lib/recherche';
 import { Pagination, usePagination } from '@/components/Pagination';
 
 const TYPE_STAGE_LABELS: Record<string, string> = {
@@ -163,7 +166,18 @@ function formatDateHeure(iso: string) {
   return new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
 }
 
+// useSearchParams (the ?offre= link from the Offres page) needs a Suspense boundary
 export default function CandidaturesListPage() {
+  return (
+    <Suspense fallback={null}>
+      <CandidaturesList />
+    </Suspense>
+  );
+}
+
+const SPONTANEES = 'spontanee'; // filter value for applications not linked to an offer
+
+function CandidaturesList() {
   const toast = useToast();
 
   const [candidatures, setCandidatures] = useState<candidature[]>([]);
@@ -171,7 +185,10 @@ export default function CandidaturesListPage() {
     useState<candidature | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [poste, setPoste] = useState('');
+  // Offer filter: '' = all, 'spontanee', or an offer id. Pre-selected by /admin/candidature?offre=<id>
+  const searchParams = useSearchParams();
+  const [offreFiltre, setOffreFiltre] = useState(() => searchParams.get('offre') ?? '');
+  const [offres, setOffres] = useState<Offre[]>([]);
   const [accepting, setAccepting] = useState(false);
   // Refusal confirmation panel in the drawer (null = closed)
   const [refus, setRefus] = useState<{ id: number; envoyerEmail: boolean; enCours: boolean } | null>(null);
@@ -201,6 +218,8 @@ export default function CandidaturesListPage() {
       )
       .finally(() => setLoading(false));
     getCriteresTri().then(setCriteres).catch(() => setCriteres(null));
+    // Current titles of the offers (an offer may have been renamed since people applied)
+    getAllOffresAdmin().then(setOffres).catch(() => setOffres([]));
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -327,10 +346,27 @@ export default function CandidaturesListPage() {
       setAccepting(false);
     }
   }
-  // Distinct postes present in the received candidatures, for the filter dropdown
-  const postes = Array.from(
-    new Set(candidatures.map((c) => c.reference?.trim()).filter(Boolean))
-  ).sort((a, b) => a.localeCompare(b, 'fr'));
+  // Offers that received candidatures, for the filter dropdown: current title, status, count
+  const offresParId = new Map(offres.map((o) => [o.id, o]));
+  const optionsOffres = Array.from(
+    candidatures.reduce((acc, c) => {
+      if (c.offre != null) acc.set(c.offre, (acc.get(c.offre) ?? 0) + 1);
+      return acc;
+    }, new Map<number, number>())
+  )
+    .map(([id, nb]) => {
+      const o = offresParId.get(id);
+      const titre = o?.titre ?? candidatures.find((c) => c.offre === id)?.reference ?? `Offre #${id}`;
+      const etat = !o ? '' : !o.actif ? ' · archivée' : o.cloturee ? ' · clôturée' : '';
+      return { valeur: String(id), libelle: `${titre}${etat} (${nb})`, titre };
+    })
+    .sort((a, b) => a.titre.localeCompare(b.titre, 'fr'));
+  // Opened from an offer that has no candidature yet (?offre=<id>): still show it, with (0)
+  if (offreFiltre && offreFiltre !== SPONTANEES && !optionsOffres.some((o) => o.valeur === offreFiltre)) {
+    const o = offresParId.get(Number(offreFiltre));
+    optionsOffres.unshift({ valeur: offreFiltre, libelle: `${o?.titre ?? `Offre #${offreFiltre}`} (0)`, titre: o?.titre ?? '' });
+  }
+  const nbSpontanees = candidatures.filter((c) => c.offre == null).length;
 
   // Study levels present in the received candidatures, with how many of each
   const niveauxDisponibles = Array.from(
@@ -359,17 +395,12 @@ export default function CandidaturesListPage() {
 
   // Every filter except the status tab, so each tab can show how many candidatures it holds
   const matchingCandidatures = candidatures.filter((c) => {
-    const query = search.toLowerCase();
-
-    if (poste && c.reference?.trim() !== poste) return false;
+    if (offreFiltre === SPONTANEES ? c.offre != null : offreFiltre && String(c.offre) !== offreFiltre) return false;
     if (niveaux.length > 0 && !niveaux.includes(c.niveau_etude || SANS_NIVEAU)) return false;
     if (range && !(c.disponible_du && c.disponible_du >= range[0] && c.disponible_du <= range[1])) return false;
 
-    return (
-      c.nom.toLowerCase().includes(query) ||
-      c.email.toLowerCase().includes(query) ||
-      c.reference?.toLowerCase().includes(query)
-    );
+    // Name, e-mail, phone, school or offer — accents, capitals and word order don't matter
+    return correspond(search, c.nom, c.email, c.telephone, c.ecole, c.reference);
   });
 
   const filteredCandidatures = matchingCandidatures.filter((c) => matchesStatut(c, envoi));
@@ -377,7 +408,7 @@ export default function CandidaturesListPage() {
   // Pages only change what is displayed: "select all" and the counts still cover every page
   const pager = usePagination(
     filteredCandidatures,
-    [search, poste, niveaux.join(','), range?.join('~') ?? '', envoi].join('|'),
+    [search, offreFiltre, niveaux.join(','), range?.join('~') ?? '', envoi].join('|'),
   );
 
   // ── Refuse the flagged candidatures (Hors critères tab): a person reviews the list, then confirms ──
@@ -493,17 +524,20 @@ export default function CandidaturesListPage() {
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <select
-              value={poste}
-              onChange={(e) => setPoste(e.target.value)}
-              aria-label="Filtrer par poste"
-              className="w-full sm:w-56 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-4 py-2.5 text-sm outline-none transition focus:border-[var(--accent-secondary)]"
+              value={offreFiltre}
+              onChange={(e) => setOffreFiltre(e.target.value)}
+              aria-label="Filtrer par offre"
+              className="w-full sm:w-64 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-4 py-2.5 text-sm outline-none transition focus:border-[var(--accent-secondary)]"
             >
-              <option value="">Tous les postes</option>
-              {postes.map((p) => (
-                <option key={p} value={p}>
-                  {p}
+              <option value="">Toutes les offres ({candidatures.length})</option>
+              {optionsOffres.map((o) => (
+                <option key={o.valeur} value={o.valeur}>
+                  {o.libelle}
                 </option>
               ))}
+              {nbSpontanees > 0 && (
+                <option value={SPONTANEES}>Candidatures spontanées ({nbSpontanees})</option>
+              )}
             </select>
 
             <div className="relative w-full sm:w-72">

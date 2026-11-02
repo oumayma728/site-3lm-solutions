@@ -7,6 +7,7 @@ import { Client, StatutClient } from '@/lib/types';
 import { STATUT_CLIENT_CONFIG } from '@/lib/statusClient';
 import PageHeader from '@/components/PageHeader';
 import { useToast } from '@/components/ToastProvider';
+import { correspond } from '@/lib/recherche';
 import { Pagination, usePagination } from '@/components/Pagination';
 
 const STATUT_FILTERS = ['tous', ...Object.keys(STATUT_CLIENT_CONFIG)] as const;
@@ -29,13 +30,8 @@ export default function ProspectsPage() {
 
   const filtered = useMemo(() => {
     return list.filter((c) => {
-      const q = search.toLowerCase();
-      const matchSearch =
-        !q ||
-        c.nom.toLowerCase().includes(q) ||
-        c.prenom?.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q) ||
-        c.entreprise?.toLowerCase().includes(q);
+      // "prénom nom" or "nom prénom", with or without accents
+      const matchSearch = correspond(search, c.prenom, c.nom, c.email, c.entreprise);
       const matchStatut = statutFilter === 'tous' || c.statut === statutFilter;
       return matchSearch && matchStatut;
     });

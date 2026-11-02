@@ -2,7 +2,8 @@ import api from './api';
 
 export type candidature = {
 id: number;
-  reference: string;
+  offre: number | null; // id of the offer applied to (null = spontaneous application)
+  reference: string; // offer title as it was when the person applied
 nom: string;
   email: string;
   telephone: string;
