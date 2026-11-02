@@ -37,7 +37,12 @@ export default function ProgramSwitcher({ offres }: { offres: Offre[] }) {
   const lang = useLang();
   const t = T[lang];
   const programmes = programmesByLang[lang];
-  const [active, setActive] = useState<Programme>('ete');
+  const [active, setActive] = useState<Programme>(() => {
+  const available = (Object.keys(programmesByLang[lang]) as Programme[])
+    .filter((key) => offres.some((o) => o.programme === key));
+
+  return available[0] ?? 'ete';
+});
   const info = programmes[active];
   // Open offers first; closed ones stay listed (marked) after them
   const filtered = offres
@@ -45,21 +50,22 @@ export default function ProgramSwitcher({ offres }: { offres: Offre[] }) {
     .sort((a, b) => Number(a.cloturee) - Number(b.cloturee));
   const openCount = filtered.filter((o) => !o.cloturee).length;
   const countFor = (key: Programme) => offres.filter((o) => o.programme === key && !o.cloturee).length;
-
+const availableProgrammes = (Object.keys(programmes) as Programme[])
+  .filter((key) => offres.some((o) => o.programme === key));
   return (
     <>
       <div className="prog-switcher">
-        {(Object.keys(programmes) as Programme[]).map((key) => (
-          <button
-            key={key}
-            type="button"
-            className={active === key ? 'active' : ''}
-            onClick={() => setActive(key)}
-          >
-            {programmes[key].label}
-            <span className="prog-count">{countFor(key)}</span>
-          </button>
-        ))}
+        {availableProgrammes.map((key) => (
+  <button
+    key={key}
+    type="button"
+    className={active === key ? 'active' : ''}
+    onClick={() => setActive(key)}
+  >
+    {programmes[key].label}
+    <span className="prog-count">{countFor(key)}</span>
+  </button>
+))}
       </div>
 
       <div className="prog-card">
