@@ -82,6 +82,14 @@ export default async function StagesPage() {
   const lang = await getLang();
   const t = T[lang];
   const offresStages = await getOffres('stage');
+
+const hasStageEte = offresStages.some(
+  (offre) => offre.programme === 'ete'
+);
+
+const hasStagePfe = offresStages.some(
+  (offre) => offre.programme === 'pfe'
+);
   return (
     <div className="site-lm">
       <SiteNavbar />
@@ -94,11 +102,11 @@ export default async function StagesPage() {
           <p>{t.lead}</p>
         </section>
 
-        {offresStages.length === 0 && (
-        <section className="stages-programmes">
-          <ProgramSwitcher offres={offresStages} />
-        </section>
-        )}
+        {(hasStageEte || hasStagePfe) && (
+  <section className="stages-programmes">
+    <ProgramSwitcher offres={offresStages} />
+  </section>
+)}
 
         <section className="stages-parcours">
           <div className="section-marker"><span />{t.journeyMarker}</div>
