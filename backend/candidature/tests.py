@@ -441,6 +441,27 @@ class LimiteParOffreTests(APITestCase):
         self.postuler('b@x.tn')
         self.assertEqual(self.postuler('c@x.tn', offre=self.autre).status_code, 201)
 
+    def test_one_candidature_per_email_whatever_the_offer(self):
+        self.assertEqual(self.postuler('a@x.tn').status_code, 201)
+        for offre in (self.offre, self.autre):
+            r = self.postuler('A@X.tn', offre=offre)
+            self.assertEqual(r.status_code, 400)
+            self.assertIn('déjà envoyé', str(r.data['email']))
+        spontanee = self.client.post('/api/candidature/', {
+            'nom': 'Test', 'email': 'a@x.tn', 'telephone': '20 000 000', 'consentement': True,
+        }, format='multipart')
+        self.assertEqual(spontanee.status_code, 400)
+        self.assertEqual(Candidature.objects.filter(email='a@x.tn').count(), 1)
+
+    def test_older_duplicates_are_kept_and_stay_editable(self):
+        anciens = [Candidature.objects.create(nom='Ancien', email='old@x.tn', telephone='20000000', offre=o)
+                   for o in (self.offre, self.autre)]
+        self.assertEqual(self.postuler('old@x.tn').status_code, 400)      # no new one with that email
+        self.assertEqual(Candidature.objects.filter(email='old@x.tn').count(), 2)
+        self.client.force_authenticate(get_user_model().objects.create_user('rh-doublons', password='x'))
+        r = self.client.patch(f'/api/candidature/{anciens[0].id}/', {'email': 'old@x.tn', 'ecole': 'ESPRIT'}, format='json')
+        self.assertEqual(r.status_code, 200, r.data)
+
     def test_failed_submissions_do_not_count(self):
         for _ in range(3):
             self.assertEqual(self.postuler('a@x.tn', consentement=False).status_code, 400)

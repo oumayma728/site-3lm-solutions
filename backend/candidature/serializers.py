@@ -140,20 +140,12 @@ class CandidatureSerializer(serializers.ModelSerializer):
                 {"disponible_au": "La date de fin doit être après la date de début."}
             )
 
-        if email:
-            if offre:
-                existe = Candidature.objects.filter(email=email, offre=offre)
-                message = "Vous avez déjà postulé à cette offre avec cet email."
-            else:
-                # Candidature sans offre (spontanée) : la contrainte unique (email, offre)
-                # ne bloque pas ce cas car la base considère deux NULL comme différents
-                existe = Candidature.objects.filter(
-                    email=email, offre__isnull=True, reference=data.get('reference', '')
+        # One candidature per email, whatever the offer. Checked here rather than with a database
+        # constraint: older duplicates are kept, and can still be edited by the team.
+        if email and (not self.instance or email != self.instance.email):
+            if Candidature.objects.filter(email__iexact=email).exists():
+                raise serializers.ValidationError(
+                    {"email": "Vous avez déjà envoyé une candidature avec cet email."}
                 )
-                message = "Vous avez déjà envoyé une candidature avec cet email."
-            if self.instance:
-                existe = existe.exclude(pk=self.instance.pk)
-            if existe.exists():
-                raise serializers.ValidationError({"email": message})
         return data
     
