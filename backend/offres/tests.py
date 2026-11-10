@@ -11,6 +11,25 @@ from .models import Offre
 MEDIA = tempfile.mkdtemp()
 
 
+class SlugTests(APITestCase):
+    """The offer's address is made from its title: long or repeated titles must not crash."""
+
+    def test_long_title_is_saved(self):
+        titre = "Stage PFE — Développement d'une plateforme web de gestion des stages et des conventions"
+        offre = Offre.objects.create(titre=titre, description='d')
+        self.assertTrue(offre.slug.startswith('stage-pfe-developpement-dune-plateforme-web'))
+        self.assertGreater(len(offre.slug), 50)
+
+    def test_same_title_gets_a_distinct_address(self):
+        a = Offre.objects.create(titre='Dev web', description='d')
+        b = Offre.objects.create(titre='Dev web', description='d')
+        self.assertEqual((a.slug, b.slug), ('dev-web', 'dev-web-2'))
+
+    def test_very_long_title_fits(self):
+        offre = Offre.objects.create(titre='x' * 200, description='d')
+        self.assertLessEqual(len(offre.slug), 200)
+
+
 @override_settings(MEDIA_ROOT=MEDIA, EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
                    DEFAULT_FROM_EMAIL='contact@test.tn')
 class ClotureArchivageTests(APITestCase):

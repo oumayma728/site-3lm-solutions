@@ -47,17 +47,22 @@ class CandidatureViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         """Per-offer limit. Only SUCCESSFUL applications count, so a candidate who fixes a form
         error is never locked out. Stored as (count, window end): cache.incr() would reset the timeout."""
+        # Form errors come first: someone applying again gets "déjà envoyé une candidature avec cet
+        # email", which is final, rather than a limit suggesting they could retry later.
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
         cle = self._cle_par_offre(request)
         now = time.time()
         count, fin = cache.get(cle) or (0, now + FENETRE_PAR_OFFRE)
         if count >= settings.CANDIDATURES_PAR_OFFRE_MAX:
             raise Throttled(
                 wait=max(1, int(fin - now)),
-                detail="Vous avez déjà postulé à cette offre récemment. Vous pourrez réessayer dans 24 heures.",
+                detail="Trop de candidatures envoyées pour cette offre depuis cette connexion.",
             )
-        response = super().create(request, *args, **kwargs)
+        self.perform_create(serializer)
         cache.set(cle, (count + 1, fin), timeout=max(1, int(fin - now)))
-        return response
+        return Response(serializer.data, status=201, headers=self.get_success_headers(serializer.data))
 
     def perform_create(self, serializer):
         candidature = serializer.save()

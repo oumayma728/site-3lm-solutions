@@ -453,6 +453,13 @@ class LimiteParOffreTests(APITestCase):
         self.assertEqual(spontanee.status_code, 400)
         self.assertEqual(Candidature.objects.filter(email='a@x.tn').count(), 1)
 
+    def test_same_email_gets_the_email_message_even_past_the_offer_limit(self):
+        self.postuler('a@x.tn')
+        self.postuler('b@x.tn')                                            # offer limit reached
+        r = self.postuler('a@x.tn')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(str(r.data['email'][0]), 'Vous avez déjà envoyé une candidature avec cet email.')
+
     def test_older_duplicates_are_kept_and_stay_editable(self):
         anciens = [Candidature.objects.create(nom='Ancien', email='old@x.tn', telephone='20000000', offre=o)
                    for o in (self.offre, self.autre)]
