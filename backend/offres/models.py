@@ -14,7 +14,9 @@ class Offre(models.Model):
         ('pfe', 'Stage PFE'),
     ]
     titre = models.CharField(max_length=200)
-    slug = models.SlugField(unique=True, blank=True)
+    # Public address of the offer, made from the title (SlugField's default limit, 50, was too short:
+    # long titles crashed with "value too long for type character varying(50)")
+    slug = models.SlugField(max_length=200, unique=True, blank=True)
     type_offre = models.CharField(max_length=20, choices=TYPE_CHOICES , default='emploi')
     programme = models.CharField(max_length=10, choices=PROGRAMME_CHOICES, blank=True)
     departement = models.CharField(max_length=100, blank=True)
@@ -40,8 +42,16 @@ class Offre(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.titre)
+            self.slug = self._slug_libre()
         super().save(*args, **kwargs)
+
+    def _slug_libre(self):
+        """Slug from the title, cut to fit the column, made unique with -2, -3… if the title is taken."""
+        base = slugify(self.titre)[:190].strip('-') or 'offre'
+        slug, n = base, 2
+        while Offre.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+            slug, n = f'{base}-{n}', n + 1
+        return slug
 
     def __str__(self):
         return self.titre
